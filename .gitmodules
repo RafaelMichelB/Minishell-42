@@ -1,0 +1,3 @@
+[submodule "Pipex"]
+	path = Pipex
+	url = https://github.com/WolfyNours/Pipex
