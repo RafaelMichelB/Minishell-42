@@ -1,6 +1,11 @@
-typedef struct s_tree
+typedef struct s_nlist
 {
-    int token;
-    struct s_tree *left;
-    struct s_tree *right;
-} t_tree;
+	char     c;
+	struct s_nlist *next;
+} t_nlist;
+
+typedef struct s_cmd
+{
+    char *path;
+    char **args;
+} t_cmd;
