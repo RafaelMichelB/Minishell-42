@@ -66,6 +66,7 @@ t_nlist	*nlst_new(char c)
 	node = malloc(sizeof(t_nlist));
 	node->c = c;
 	node->next = NULL;
+	return (node);
 }
 
 t_nlist	*nstlast(t_nlist *lst)
@@ -403,15 +404,15 @@ int	find_nb(t_list *lst, char c)
 	return (n);
 }
 
-char	**gen_args(t_list *lst)
+char	**gen_args(t_list **lst)
 {
 	t_list	*cpy;
 	int		nb;
 	char	**array;
 
 	nb = 0;
-	cpy = lst;
-	while (((char *)cpy->content)[0] != '|' && ((char *)cpy->content)[0] != '>')
+	cpy = *lst;
+	while (((char *)cpy->content)[0] != '>')
 	{
 		nb++;
 		cpy = cpy->next;
@@ -419,10 +420,10 @@ char	**gen_args(t_list *lst)
 	array = ft_calloc(nb + 2, sizeof(char *));
 	array[nb + 1] = NULL;
 	nb = 0;
-	while (((char *)lst->content)[0] != '|' && ((char *)lst->content)[0] != '>')
+	while (((char *)(*lst)->content)[0] != '>')
 	{
-		array[nb] = ft_strdup(lst->content);
-		lst = lst->next;
+		array[nb] = ft_strdup((*lst)->content);
+		(*lst) = (*lst)->next;
 		nb++;
 	}
 	return (array);
@@ -478,49 +479,141 @@ char	*find_nice_path(char *cmd, char **env)
 	return (ft_free(path), NULL);
 }
 
+int	only_in(char *str, char c)
+{
+	int	i;
+
+	i = -1;
+	while (str[++i])
+	{
+		if (str[i] != c)
+			return (0);
+	}
+	return (1);
+}
+
+
 t_cmd	*create_args(t_list *l, int i, char **env)
 {
-	t_cmd	*comand_array;
+	t_cmd	*cmd_array;
+	int		j;
 
-	comand_array = ft_calloc(find_nb(l, '|') + 3, sizeof(t_cmd));
-	comand_array[0].path = ft_strtrim(l->next->content, " ");
-	comand_array[0].args = NULL;
-	l = l->next->next;
-	while (((char *)l->content)[0] != '>')
+	cmd_array = ft_calloc(ft_lstsize(l), sizeof(t_cmd));
+	l = l->next;
+	while (l)
 	{
-		if (is_in_str('/', l->content))
-			comand_array[i].path = ft_strdup(l->content);
+		if (only_in(l->content, ' ') == 1 || only_in(l->content, '\t') == 1)
+			exit(0);
+		cmd_array[i].path = ft_strtrim(l->content, " ");
+		cmd_array[i].args = NULL;
+		cmd_array[i].type = RED_IN;
+		l = l->next;
+		if (is_in_str('/', l->content) == 0)
+			cmd_array[i + 1].path = find_nice_path(l->content, env);
 		else
-			comand_array[i].path = find_nice_path(l->content, env);
-		comand_array[i].args = gen_args(l);
-		while (((char *)l->content)[0] != '>' && ((char *)l->content)[0] != '|')
+			cmd_array[i + 1].path = ft_strtrim(l->content, " ");
+		if (cmd_array[i + 1].path == NULL)
+		{
+			cmd_array[i + 1].path = l->content;
+			cmd_array[i + 1].args = NULL;
+			cmd_array[i + 1].type = NONE;
+			ft_free(gen_args(&l));
+		}
+		else
+		{
+			cmd_array[i + 1].args = gen_args(&l);
+			cmd_array[i + 1].type = CMD;
+		}
+		l = l->next;
+		j = 2;
+		while (l && ((char *)(l->content))[0] != '|')
+		{
+			ft_putendl_fd(l->content, 2);
+			cmd_array[i + j].path = ft_substr(l->content, 1, ft_strlen(l->content) - 1); // SI C == ' '
+			cmd_array[i + j].args = NULL;
+			if (cmd_array[i + j].type != RED_APP)
+				cmd_array[i + j].type = RED_OUT;
+			if (((char *)(l->content))[0] != '>')
+				l = l->next;
+			if (l && ((char *)(l->content))[0] != '|' && ((char *)(l->content))[0] != '>')
+				l = l->next;
+			//if (l && ((char *)(l->content))[0] == '>')
+			//	l = l->next;
+			if (l && ((char *)(l->content))[0] == '>')
+			{
+				//ft_putendl_fd(l->next->content, 2);
+				l = l->next;
+				if (ft_strlen(cmd_array[i + j].path) != 0)
+					cmd_array[i + j + 1].type = RED_APP;
+				else
+					cmd_array[i + j].type = RED_APP;
+			}
+			//ft_putendl_fd(l->content, 2);
+			if (ft_strlen(cmd_array[i + j].path) != 0)
+				j++;
+		}
+		while (l && ((char *)(l->content))[0] != '<')
 			l = l->next;
-		if (((char *)l->content)[0] != '>')
+		if (l)
 			l = l->next;
+		i += j;
+	}
+	cmd_array[i].type = END;
+	i = 0;
+	while (cmd_array[i].type != END)
+	{
+		ft_putstr_fd(cmd_array[i].path, 2);
+		j = -1;
+		ft_putchar_fd('|', 2);
+		while (cmd_array[i].args && cmd_array[i].args[++j])
+		{
+			ft_putstr_fd(cmd_array[i].args[j], 2);
+			ft_putchar_fd('|', 2);
+		}
+		ft_putnbr_fd(cmd_array[i].type, 2);
+		ft_putchar_fd('\n', 2);
 		i++;
 	}
-	if (((char *)l->next->content)[0] == '>')
-		l = l->next;
-	comand_array[i].path = ft_strtrim(l->next->content, " ");
-	comand_array[i].args = NULL;
-	return (comand_array);
+	//exit(2);
+	return (cmd_array);
 }
 
 int	do1cmd(t_cmd *cmds, int flag, char **env)
 {
 	int	fd[2];
+	int i;
 
-	if (access(cmds[0].path, F_OK | R_OK) == -1)
+	i = 0;
+	if (cmds[1].type == NONE)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmds[1].path, 2);
+		ft_putendl_fd(": command not found", 2);
 		exit(1);
+	}
+	if (access(cmds[1].path, F_OK | R_OK) == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmds[1].path, 2);
+		ft_putendl_fd(": command not found", 2);
+		exit(1);
+	}
 	fd[0] = open(cmds[0].path, O_RDONLY);
 	if (fd[0] == -1)
 		exit(1);
 	dup2(fd[0], 0);
 	close(fd[0]);
-	if (flag == 0)
-		fd[1] = open(cmds[2].path, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-	else
-		fd[1] = open(cmds[2].path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmds[i].type != END)
+	{
+		if (fd[1] != -1)
+			close(fd[1]);
+		if (cmds[i].type == RED_OUT)
+			fd[1] = open(cmds[i].path, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+		else
+			fd[1] = open(cmds[i].path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+		i++;
+	}
 	if (fd[1] == -1)
 		exit(1);
 	dup2(fd[1], 1);
@@ -531,6 +624,8 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 
 void	apply_flags(t_list *t_lst, int flags[])
 {
+	if (t_lst == NULL)
+		exit(1);
 	while (t_lst)
 	{
 		if (((char *)t_lst->content)[0] == '<')
@@ -552,21 +647,15 @@ void	apply_flags(t_list *t_lst, int flags[])
 void	main3(t_list *t_lst[], int flags[], char **env)
 {
 	t_cmd	*cmds;
+	int f;
 
+	f = 0;
 	t_lst[0] = t_lst[1];
 	apply_flags(t_lst[0], flags);
-	if (flags[0] == 0)
-	{
-		ft_lstadd_front(&t_lst[1], ft_lstnew(ft_strdup("/dev/stdin")));
-		ft_lstadd_front(&t_lst[1], ft_lstnew(ft_strdup("<")));
-	}
-	if (flags[1] == 0 && flags[2] == 0)
-	{
-		ft_lstadd_back(&t_lst[1], ft_lstnew(ft_strdup(">")));
-		ft_lstadd_back(&t_lst[1], ft_lstnew(ft_strdup("/dev/stdout")));
-	}
+	
+	//exit(2);
 	t_lst[0] = t_lst[1];
-	cmds = create_args(t_lst[1], 1, env);
+	cmds = create_args(t_lst[1], 0, env);
 	ft_lstclear(&t_lst[1], &ft_del);
 	if (flags[3] == 0)
 		do1cmd(cmds, flags[1], env);
@@ -578,13 +667,35 @@ void	main2(char *str, char **env, int *flag)
 	t_list	*t_lst[2];
 	int		flags[6];
 	pid_t	pid;
+	char	**tab;
 
 	pid = fork();
 	if (pid == -1)
 		return ;
 	if (pid == 0)
 	{
-		flags[4] = -1;
+		flags[4] = 0;
+		tab = ft_split(str, '|');
+//		ft_putendl_fd(tab[0], 2);
+		while (tab[flags[4]] != NULL)
+		{
+			if (is_in_str('<', tab[flags[4]]) == 0)
+				tab[flags[4]] = add_str2("< /dev/stdin ", tab[flags[4]]);
+			if (is_in_str('>', tab[flags[4]]) == 0)
+				tab[flags[4]] = add_str(tab[flags[4]], "> /dev/stdout");
+			//ft_putendl_fd(tab[flags[4]], 2);
+			flags[4] += 1;
+		}
+		flags[4] =1;
+		str = tab[0];
+		while (tab[flags[4]] != NULL)
+		{
+			str = add_str(str, "|");
+			str = add_str(str, tab[flags[4]]);
+			flags[4] += 1;
+		}
+//		ft_putendl_fd(str, 2);
+//		exit(2);
 		while (++(flags[4]) < 4)
 			flags[flags[4]] = 0;
 		lst = create_stack_1(str);
@@ -612,4 +723,5 @@ int	main(int c, char **v, char **env)
 		str = readline(">> ");
 		main2(str, env, &flag);
 	}
+	return (1);
 }
