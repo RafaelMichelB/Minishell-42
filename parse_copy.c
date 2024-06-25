@@ -186,6 +186,7 @@ void	create_stack34(t_nlist **stack1, t_nlist **stack2)
 void	create_stack35(t_nlist **stack1, t_nlist **stack2, \
 t_list **stack3, char **s)
 {
+	ft_putendl_fd("HHHHH", 2);
 	if (*stack2 != NULL)
 	{
 		*s = join_stack(*stack2);
@@ -493,6 +494,88 @@ int	only_in(char *str, char c)
 	return (1);
 }
 
+void	ca23(t_list **l, int *i, t_cmd **cmd_array)
+{
+	if (((char *)((*l)->content))[0] == ' ')
+		(*cmd_array)[*i + 1].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+	else
+		(*cmd_array)[*i + 1].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
+}
+
+void	ca22(t_list **l, int *i, t_cmd **cmd_array)
+{
+	if (((char *)((*l)->content))[0] == ' ')
+		(*cmd_array)[*i].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+	else
+		(*cmd_array)[*i].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
+}
+
+void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
+{
+	if (only_in((*l)->content, ' ') == 1 || only_in((*l)->content, '\t') == 1)
+		exit(0);
+	ca22(l, i, cmd_array);
+	(*cmd_array)[*i].args = NULL;
+	(*cmd_array)[*i].type = RED_IN;
+	(*l) = (*l)->next;
+	if (is_in_str('/', (*l)->content) == 0)
+		(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, env);
+	else
+		ca23(l, i, cmd_array);
+	if ((*cmd_array)[*i + 1].path == NULL)
+	{
+		(*cmd_array)[*i + 1].path = ft_strdup((*l)->content);
+		(*cmd_array)[*i + 1].args = NULL;
+		(*cmd_array)[*i + 1].type = NONE;
+		ft_free(gen_args(l));
+	}
+	else
+	{
+		(*cmd_array)[*i + 1].args = gen_args(l);
+		(*cmd_array)[*i + 1].type = CMD;
+	}
+}
+
+void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
+{
+	if (((char *)((*l)->content))[0] == ' ' || (((char *)((*l)->content))[0] == '>' && (*l)->next))
+	{
+		free((*cmd_array)[*i + *j].path);
+		(*cmd_array)[*i + *j].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+	}
+	else
+		(*cmd_array)[*i + *j].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
+}
+
+int	ca3(t_list **l, int *i, t_cmd **cmd_array, char **env)
+{
+	int j;
+
+	j = 2;
+	ca32(l, i, cmd_array, &j);
+	(*cmd_array)[*i + j].args = NULL;
+	if ((*cmd_array)[*i + j].type != RED_APP)
+		(*cmd_array)[*i + j].type = RED_OUT;
+	if (((char *)((*l)->content))[0] != '>')
+		(*l) = (*l)->next;
+	if ((*l) && ((char *)((*l)->content))[0] != '|' && ((char *)((*l)->content))[0] != '>')
+		(*l) = (*l)->next;
+	if ((*l) && ((char *)((*l)->content))[0] == '>')
+		(*l) = (*l)->next;
+	if ((*l) && ((char *)((*l)->content))[0] == '>' && (*l)->next)
+	{
+		while (((char *)((*l)->content))[0] != '>')
+			(*l) = (*l)->next;
+		if (ft_strlen((*cmd_array)[*i + j].path) != 0)
+			(*cmd_array)[*i + j + 1].type = RED_APP;
+		else
+			(*cmd_array)[*i + j].type = RED_APP;
+	}
+	if (ft_strlen((*cmd_array)[*i + j].path) != 0)
+		j++;
+	return (j);
+}
+
 t_cmd	*create_args(t_list *l, int i, char **env)
 {
 	t_cmd	*cmd_array;
@@ -502,66 +585,10 @@ t_cmd	*create_args(t_list *l, int i, char **env)
 	l = l->next;
 	while (l)
 	{
-		if (only_in(l->content, ' ') == 1 || only_in(l->content, '\t') == 1)
-			exit(0);
-		if (((char *)(l->content))[0] == ' ')
-			cmd_array[i].path = ft_substr(l->content, 1, ft_strlen(l->content) - 1);
-		else
-			cmd_array[i].path = ft_substr(l->content, 0, ft_strlen(l->content));
-		cmd_array[i].args = NULL;
-		cmd_array[i].type = RED_IN;
+		ca2(&l, &i, &cmd_array, env);
 		l = l->next;
-		if (is_in_str('/', l->content) == 0)
-			cmd_array[i + 1].path = find_nice_path(l->content, env);
-		else
-		{
-			if (((char *)(l->content))[0] == ' ')
-				cmd_array[i + 1].path = ft_substr(l->content, 1, ft_strlen(l->content) - 1);
-			else
-				cmd_array[i + 1].path = ft_substr(l->content, 0, ft_strlen(l->content));
-		}
-		if (cmd_array[i + 1].path == NULL)
-		{
-			cmd_array[i + 1].path = ft_strdup(l->content);
-			cmd_array[i + 1].args = NULL;
-			cmd_array[i + 1].type = NONE;
-			ft_free(gen_args(&l));
-		}
-		else
-		{
-			cmd_array[i + 1].args = gen_args(&l);
-			cmd_array[i + 1].type = CMD;
-		}
-		l = l->next;
-		j = 2;
 		while (l && ((char *)(l->content))[0] != '|')
-		{
-			ft_putendl_fd(l->content, 2);
-			if (((char *)(l->content))[0] == ' ' || (((char *)(l->content))[0] == '>' && l->next))
-				cmd_array[i + j].path = ft_substr(l->content, 1, ft_strlen(l->content) - 1);
-			else
-				cmd_array[i + j].path = ft_substr(l->content, 0, ft_strlen(l->content));
-			cmd_array[i + j].args = NULL;
-			if (cmd_array[i + j].type != RED_APP)
-				cmd_array[i + j].type = RED_OUT;
-			if (((char *)(l->content))[0] != '>')
-				l = l->next;
-			if (l && ((char *)(l->content))[0] != '|' && ((char *)(l->content))[0] != '>')
-				l = l->next;
-			if (l && ((char *)(l->content))[0] == '>')
-				l = l->next;
-			if (l && ((char *)(l->content))[0] == '>' && l->next)
-			{
-				while (((char *)(l->content))[0] != '>')
-					l = l->next;
-				if (ft_strlen(cmd_array[i + j].path) != 0)
-					cmd_array[i + j + 1].type = RED_APP;
-				else
-					cmd_array[i + j].type = RED_APP;
-			}
-			if (ft_strlen(cmd_array[i + j].path) != 0)
-				j++;
-		}
+			j = ca3(&l, &i, &cmd_array, env);
 		while (l && ((char *)(l->content))[0] != '<')
 			l = l->next;
 		if (l)
@@ -584,16 +611,24 @@ t_cmd	*create_args(t_list *l, int i, char **env)
 		ft_putchar_fd('\n', 2);
 		i++;
 	}
-	//exit(2);
 	return (cmd_array);
+}
+
+void	do1cmd2(int fd[], int *i, t_cmd *cmds)
+{
+	if (fd[1] != -1)
+		close(fd[1]);
+	if (cmds[*i].type == RED_OUT)
+		fd[1] = open(cmds[*i].path, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	else
+		fd[1] = open(cmds[*i].path, O_WRONLY | O_APPEND | O_CREAT, 0644);
+	(*i)++;
 }
 
 int	do1cmd(t_cmd *cmds, int flag, char **env)
 {
 	int		fd[2];
-	int		pipefd[2];
 	int		i;
-	pid_t	pid;
 
 	i = 2;
 	if (cmds[1].type == NONE)
@@ -601,98 +636,83 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 		ft_putstr_fd("bash: ", 2);
 		ft_putstr_fd(cmds[1].path, 2);
 		ft_putendl_fd(": command not found", 2);
-		exit(1);
-	}
-	if (access(cmds[1].path, F_OK | R_OK) == -1)
-	{
-		ft_putstr_fd("bash: ", 2);
-		ft_putstr_fd(cmds[1].path, 2);
-		ft_putendl_fd(": command not found", 2);
-		exit(1);
+		exit(127);
 	}
 	fd[0] = open(cmds[0].path, O_RDONLY);
 	if (fd[0] == -1)
-	{
-		ft_putendl_fd("kkk", 2);
 		exit(1);
-	}
 	dup2(fd[0], 0);
 	close(fd[0]);
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmds[i].type != END)
-	{
-		if (fd[1] != -1)
-			close(fd[1]);
-		if (cmds[i].type == RED_OUT)
-			fd[1] = open(cmds[i].path, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-		else
-			fd[1] = open(cmds[i].path, O_WRONLY | O_APPEND | O_CREAT, 0644);
-		i++;
-	}
+		do1cmd2(fd, &i, cmds);
 	if (fd[1] == -1)
-	{
-		ft_putendl_fd("JJJ", 2);
 		exit(1);
-	}
 	dup2(fd[1], 1);
 	close(fd[1]);
 	execve(cmds[1].path, cmds[1].args, env);
 	exit(1);
 }
 
-void	simulpipe(t_cmd *cmd, char **env)
+void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
+{
+	while (cmd[tab[0]].type == RED_IN)
+	{
+		tab[1]++;
+		tab[0]++;
+	}
+	while (cmd[tab[0]].type != RED_IN && cmd[tab[0]].type != END)
+	{
+		tab[0]++;
+		tab[1]++;
+	}
+	(*type) = ft_calloc(tab[1] + 1, sizeof(t_cmd));
+	(*type)[tab[1]].type = END;
+	tab[1] = 0;
+	while (cmd[tab[2]].type == RED_IN)
+	{
+		(*type)[tab[1]] = cmd[tab[2]];
+		tab[1]++;
+		tab[2]++;
+	}
+	while (cmd[tab[2]].type != RED_IN && cmd[tab[2]].type != END)
+	{
+		(*type)[tab[1]] = cmd[tab[2]];
+		tab[2]++;
+		tab[1]++;
+	}
+}
+void	simulpipe(t_cmd **cmd, char **env)
 {
 	int status;
-	int i;
-	int j;
-	int k;
+	int tab[3];
 	t_cmd *type;
+	pid_t pid;
 
-	i = 0;
-	while (cmd[i].type != END)
+	tab[0] = 0;
+	while ((*cmd)[tab[0]].type != END)
 	{
-		k = i;
-		j = 0;
-		while (cmd[i].type == RED_IN)
-		{
-			j++;
-			i++;
-		}
-		while (cmd[i].type != RED_IN && cmd[i].type != END)
-		{
-			i++;
-			j++;
-		}
-		type = ft_calloc(j + 1, sizeof(t_cmd));
-		type[j].type = END;
-		j = 0;
-		while (cmd[k].type == RED_IN)
-		{
-			type[j] = cmd[k];
-			j++;
-			k++;
-		}
-		while (cmd[k].type != RED_IN && cmd[k].type != END)
-		{
-			type[j] = cmd[k];
-			k++;
-			j++;
-		}
-		pid_t pid;
+		tab[2] = tab[0];
+		tab[1] = 0;
+		simulpipe2(tab, *cmd, &type);
 		pid = fork();
 		if (pid == 0)
-		{
-			ft_putendl_fd("---", 2);
 			do1cmd(type, 0, env);
-		}
 		else
 		{
-		//	waitpid(pid, &status, 0);
-		//	free(type);
-			continue ;
+			waitpid(pid, &status, 0);
+			free(type);
 		}
 	}
-//	unlink("tempfile");
+	tab[0] = 0;
+	while ((*cmd)[tab[0]].type != END)
+	{
+		//ft_putendl_fd(":::::", 2);
+		free((*cmd)[tab[0]].path);
+		//ft_free((*cmd)[tab[0]].args);
+		(tab[0])++;
+	}
+	exit(WEXITSTATUS(status));
 }
 
 void	apply_flags(t_list *t_lst, int flags[])
@@ -727,18 +747,9 @@ void	main3(t_list *t_lst[], int flags[], char **env)
 	apply_flags(t_lst[0], flags);
 	t_lst[0] = t_lst[1];
 	cmds = create_args(t_lst[1], 0, env);
-//	create_array(cmds);
 	ft_lstclear(&t_lst[1], &ft_del);
-	if (flags[3] == 0)
-	{
-		ft_putendl_fd("...", 2);
-		do1cmd(cmds, flags[1], env);
-	}
-	else
-	{
-		ft_putendl_fd(")))", 2);
-		simulpipe(cmds, env);
-	}
+	ft_putendl_fd(")))", 2);
+	simulpipe(&cmds, env);
 }
 
 void	main2(char *str, char **env, int *flag, int fd)
@@ -748,8 +759,12 @@ void	main2(char *str, char **env, int *flag, int fd)
 	int		flags[6];
 	pid_t	pid;
 	char	**tab;
+	char	*tempfilein[2] = {"< tempfile ", "< tempfile2 "};
+	char	*tempfileout[2] = {"> tempfile ", "> tempfile2 "};
 
 	fd = open("tempfile", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	close(fd);
+	fd = open("tempfile2", O_RDWR | O_CREAT | O_TRUNC, 0644);
 	close(fd);
 	pid = fork();
 	if (pid == -1)
@@ -765,27 +780,25 @@ void	main2(char *str, char **env, int *flag, int fd)
 				if (flags[4] == 0)
 					tab[flags[4]] = add_str2("< /dev/stdin ", tab[flags[4]]);
 				else
-					tab[flags[4]] = add_str2("< tempfile ", tab[flags[4]]);
+					tab[flags[4]] = add_str2(tempfilein[(flags[4] + 1) % 2], tab[flags[4]]);
 			}
 			if (is_in_str('>', tab[flags[4]]) == 0)
 			{
 				if (tab[flags[4] + 1])
-					tab[flags[4]] = add_str(tab[flags[4]], "> tempfile");
+					tab[flags[4]] = add_str(tab[flags[4]], tempfileout[flags[4] % 2]);
 				else
 					tab[flags[4]] = add_str(tab[flags[4]], "> /dev/stdout");
 			}
 			flags[4] += 1;
 		}
-		flags[4] =1;
+		flags[4] = 1;
 		str = tab[0];
 		while (tab[flags[4]] != NULL)
 		{
-			str = add_str(str, "|");
+			str = add_str(str, "| ");
 			str = add_str(str, tab[flags[4]]);
 			flags[4] += 1;
 		}
-//		ft_putendl_fd(str, 2);
-//		exit(2);
 		while (++(flags[4]) < 4)
 			flags[flags[4]] = 0;
 		lst = create_stack_1(str);
@@ -793,11 +806,11 @@ void	main2(char *str, char **env, int *flag, int fd)
 		t_lst[1] = interpret_quotes(t_lst[0], *flag);
 		ft_lstclear(&(t_lst[0]), &ft_del);
 		nlstclear(&lst);
+		ft_putendl_fd(str, 2);
 		main3(t_lst, flags, env);
 	}
 	else
 	{
-		//wait(NULL);
 		waitpid(pid, &(flags[5]), 0);
 		*flag = WEXITSTATUS(flags[5]);
 	}
@@ -814,12 +827,11 @@ int	main(int c, char **v, char **env)
 	while (1)
 	{
 		str = readline(">> ");
+		if (ft_strncmp(str, "exit", 5) == 0)
+			return (0);
 		main2(str, env, &flag, fd);
-		int k = unlink("tempfile");
-		if (k == -1)
-		{
-			ft_putendl_fd("???", 2);
-		}
+		//unlink("tempfile");
+		//unlink("tempfile2");
 	}
 	return (1);
 }
