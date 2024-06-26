@@ -253,12 +253,12 @@ char	*add_str(char *str, char *s)
 	return (ret);
 }
 
-char	*add_str2(char *str, char *s)
+char	*add_str2(char *str, char **s)
 {
 	char	*ret;
 
-	ret = ft_strjoin(str, s);
-	free(s);
+	ret = ft_strjoin(str, *s);
+	free(*s);
 	return (ret);
 }
 
@@ -707,9 +707,10 @@ void	simulpipe(t_cmd **cmd, char **env)
 	tab[0] = 0;
 	while ((*cmd)[tab[0]].type != END)
 	{
-		//ft_putendl_fd(":::::", 2);
+		ft_putendl_fd(":::::", 2);
 		free((*cmd)[tab[0]].path);
-		//ft_free((*cmd)[tab[0]].args);
+		if ((*cmd)[tab[0]].args)
+			ft_free((*cmd)[tab[0]].args);
 		(tab[0])++;
 	}
 	exit(WEXITSTATUS(status));
@@ -759,12 +760,12 @@ void	main2(char *str, char **env, int *flag, int fd)
 	int		flags[6];
 	pid_t	pid;
 	char	**tab;
-	char	*tempfilein[2] = {"< tempfile ", "< tempfile2 "};
-	char	*tempfileout[2] = {"> tempfile ", "> tempfile2 "};
+	char	*tempfilein[2] = {"< /tmp/tempfile ", "< /tmp/tempfile2 "};
+	char	*tempfileout[2] = {"> /tmp/tempfile ", "> /tmp/tempfile2 "};
 
-	fd = open("tempfile", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	fd = open("/tmp/tempfile", O_RDWR | O_CREAT | O_TRUNC, 0644);
 	close(fd);
-	fd = open("tempfile2", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	fd = open("/tmp/tempfile2", O_RDWR | O_CREAT | O_TRUNC, 0644);
 	close(fd);
 	pid = fork();
 	if (pid == -1)
@@ -778,9 +779,9 @@ void	main2(char *str, char **env, int *flag, int fd)
 			if (is_in_str('<', tab[flags[4]]) == 0)
 			{
 				if (flags[4] == 0)
-					tab[flags[4]] = add_str2("< /dev/stdin ", tab[flags[4]]);
+					tab[flags[4]] = add_str2("< /dev/stdin ", &(tab[flags[4]]));
 				else
-					tab[flags[4]] = add_str2(tempfilein[(flags[4] + 1) % 2], tab[flags[4]]);
+					tab[flags[4]] = add_str2(tempfilein[(flags[4] + 1) % 2], &(tab[flags[4]]));
 			}
 			if (is_in_str('>', tab[flags[4]]) == 0)
 			{
@@ -792,13 +793,16 @@ void	main2(char *str, char **env, int *flag, int fd)
 			flags[4] += 1;
 		}
 		flags[4] = 1;
-		str = tab[0];
+		str = ft_strdup(tab[0]);
+		free(tab[0]);
 		while (tab[flags[4]] != NULL)
 		{
 			str = add_str(str, "| ");
 			str = add_str(str, tab[flags[4]]);
+			free(tab[flags[4]]);
 			flags[4] += 1;
 		}
+		flags[4] = 0;
 		while (++(flags[4]) < 4)
 			flags[flags[4]] = 0;
 		lst = create_stack_1(str);
@@ -807,6 +811,7 @@ void	main2(char *str, char **env, int *flag, int fd)
 		ft_lstclear(&(t_lst[0]), &ft_del);
 		nlstclear(&lst);
 		ft_putendl_fd(str, 2);
+		free(tab);
 		main3(t_lst, flags, env);
 	}
 	else
@@ -830,8 +835,8 @@ int	main(int c, char **v, char **env)
 		if (ft_strncmp(str, "exit", 5) == 0)
 			return (0);
 		main2(str, env, &flag, fd);
-		//unlink("tempfile");
-		//unlink("tempfile2");
+		unlink("/tmp/tempfile");
+		unlink("/tmp/tempfile2");
 	}
 	return (1);
 }
