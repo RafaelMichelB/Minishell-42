@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <termios.h>
 
 /****************************************************/
 /*													*/
@@ -821,19 +822,52 @@ void	main2(char *str, char **env, int *flag, int fd)
 	}
 }
 
+void enable_raw_mode(struct termios *orig_termios) {
+    struct termios raw;
+
+    tcgetattr(STDIN_FILENO, orig_termios);
+    raw = *orig_termios;
+    raw.c_lflag &= ~(ECHO | ICANON);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+void disable_raw_mode(struct termios *orig_termios) {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, orig_termios);
+}
+
 int	main(int c, char **v, char **env)
 {
 	int		flag;
 	int		fd;
 	char	*str;
-
+	char	sub[2];
+	struct termios orig_termios;
+	
+	sub[0] = '\0';
+	sub[1] = '\0';
 	flag = -1;
-
+	str = ft_calloc(2, 1);
+	//sub = ft_strdup("");
+	enable_raw_mode(&orig_termios);
+	ft_putstr_fd(">> ", 1);
+	read(STDIN_FILENO, str, 1);
+	//ft_putstr_fd("caracter reached : ", 2);
+	ft_putstr_fd(str, 2);
 	while (1)
 	{
-		str = readline(">> ");
+		while (sub[0] != '\n')
+		{
+			read(STDIN_FILENO, sub, 1);
+			write(STDOUT_FILENO, "\033[2K\r", 5);
+			ft_putstr_fd(">> ", 1);
+			str = add_str(str, sub);
+			//ft_putstr_fd("caracter reached : ", 2);
+			ft_putstr_fd(str, 2);
+		}
+		ft_putendl_fd(str, 2);
+		exit(2);
 		if (ft_strncmp(str, "exit", 5) == 0)
-			return (0);
+			return (disable_raw_mode(&orig_termios), 0);
 		main2(str, env, &flag, fd);
 		unlink("/tmp/tempfile");
 		unlink("/tmp/tempfile2");
