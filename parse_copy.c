@@ -1,4 +1,4 @@
-#include "Pipex/libft/libft.h"
+#include "Pipex/inc/pipex_bonus.h"
 #include "parser.h"
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -8,6 +8,25 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <termios.h>
+
+
+char	*ft_strtrim2(char const *s1, char const *set)
+{
+	size_t	start;
+	size_t	end;
+	char	*ptr;
+
+	if (s1 == NULL || set == NULL)
+		return (NULL);
+	if (*s1 == '\0' || *set == '\0')
+		return (ft_strdup(s1));
+	start = 0;
+	end = ft_strlen(s1);
+	while (s1[start] && ft_strchr(set, s1[start]))
+		start++;
+	ptr = ft_substr(s1, start, (end - start));
+	return (ptr);
+}
 
 /****************************************************/
 /*													*/
@@ -265,12 +284,30 @@ char	*add_str2(char *str, char **s)
 
 void	iq42(t_nlist *stacks[], char *strs[], int flag)
 {
-	stacks[2] = stacks[2]->next;
-	strs[1] = join_stack(stacks[1]);
-	nlstclear(&stacks[1]);
-	strs[1] = add_str(strs[1], ft_itoa(flag));
-	strs[0] = add_str(strs[0], strs[1]);
-	free(strs[1]);
+	char *str;
+
+	if (stacks[2] == NULL || stacks[2]->c == ' ')
+	{
+		ft_putendl_fd("JJJ", 2);
+		if (stacks[2])
+			stacks[2] = stacks[2]->next;
+		strs[1] = join_stack(stacks[1]);
+		nlstclear(&stacks[1]);
+		strs[1] = add_str(strs[1], "$");
+		strs[0] = add_str(strs[0], strs[1]);
+		free(strs[1]);
+	}
+	else
+	{
+		stacks[2] = stacks[2]->next;
+		strs[1] = join_stack(stacks[1]);
+		nlstclear(&stacks[1]);
+		str = ft_itoa(flag);
+		strs[1] = add_str(strs[1], str);
+		free(str);
+		strs[0] = add_str(strs[0], strs[1]);
+		free(strs[1]);
+	}
 }
 
 void	iq4(t_nlist *stacks[], char *strs[], int flag)
@@ -278,7 +315,7 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag)
 	if (stacks[2]->c == '$')
 	{
 		stacks[2] = stacks[2]->next;
-		if (stacks[2]->c == '?')
+		if (stacks[2] == NULL || stacks[2]->c == '?' || stacks[2]->c == ' ')	
 			iq42(stacks, strs, flag);
 		else
 		{
@@ -293,7 +330,7 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag)
 			strs[0] = add_str(strs[0], getenv(strs[1]));
 			free(strs[1]);
 		}
-	}
+	}	
 	else
 	{
 		strs[2][0] = stacks[2]->c;
@@ -305,7 +342,17 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag)
 void	iq32(t_nlist *stacks[], char *strs[], int flag)
 {
 	stacks[2] = stacks[2]->next;
-	if (stacks[2]->c == '?')
+	if (stacks[2]->c == ' ' || stacks[2]->c == '"')
+	{
+		ft_putendl_fd("JJJ", 2);
+		//stacks[2] = stacks[2]->next;
+		strs[1] = join_stack(stacks[1]);
+		nlstclear(&stacks[1]);
+		strs[1] = add_str(strs[1], "$");
+		strs[0] = add_str(strs[0], strs[1]);
+		free(strs[1]);
+	}
+	else if (stacks[2]->c == '?')
 	{
 		stacks[2] = stacks[2]->next;
 		strs[1] = join_stack(stacks[1]);
@@ -425,14 +472,14 @@ char	**gen_args(t_list **lst)
 	while (((char *)(*lst)->next->content)[0] != '>')
 	{
 		if (((char *)((*lst)->content))[0] == ' ')
-			array[nb] = ft_substr((*lst)->content, 1, ft_strlen((*lst)->content) - 1);
+			array[nb] = ft_strtrim2((*lst)->content, " ");
 		else
 			array[nb] = ft_substr((*lst)->content, 0, ft_strlen((*lst)->content));
 		(*lst) = (*lst)->next;
 		nb++;
 	}
 	if (((char *)((*lst)->content))[0] == ' ')
-		array[nb] = ft_substr((*lst)->content, 1, ft_strlen((*lst)->content) - 1);
+		array[nb] = ft_strtrim2((*lst)->content, " ");
 	else
 		array[nb] = ft_substr((*lst)->content, 0, ft_strlen((*lst)->content));
 	return (array);
@@ -523,7 +570,7 @@ t_cmd	handle_hdoc(t_list **l, char **env)
 	else
 	{
 		if (((char *)((*l)->content))[0] == ' ')
-			cmd.path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+			cmd.path = ft_strtrim2((*l)->content, " ");
 		else
 			cmd.path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 	}
@@ -537,7 +584,7 @@ t_cmd	handle_hdoc(t_list **l, char **env)
 void	ca23(t_list **l, int *i, t_cmd **cmd_array)
 {
 	if (((char *)((*l)->content))[0] == ' ')
-		(*cmd_array)[*i + 1].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+		(*cmd_array)[*i + 1].path = ft_strtrim2((*l)->content, " ");
 	else
 		(*cmd_array)[*i + 1].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 }
@@ -545,15 +592,16 @@ void	ca23(t_list **l, int *i, t_cmd **cmd_array)
 void	ca22(t_list **l, int *i, t_cmd **cmd_array)
 {
 	if (((char *)((*l)->content))[0] == ' ')
-		(*cmd_array)[*i].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+		(*cmd_array)[*i].path = ft_strtrim2((*l)->content, " ");
 	else
 		(*cmd_array)[*i].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 }
 
 void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
 {
-	//if (only_in((*l)->content, ' ') == 1 || only_in((*l)->content, '\t') == 1)
-	//	return (ft_putendl_fd("Z", 2), exit(0));
+	int	flag;
+
+	flag = 0;
 	ca22(l, i, cmd_array);
 	(*cmd_array)[*i].args = NULL;
 	(*cmd_array)[*i].type = RED_IN;
@@ -566,7 +614,17 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
 	else
 	{
 		if (is_in_str('/', (*l)->content) == 0)
-			(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, env);
+		{
+			ft_putendl_fd((*l)->content, 2);
+			if (ft_strncmp("built", ft_strtrim2((*l)->content, " "), 6) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
+			{
+				flag = 1;
+				ft_putendl_fd("OOOOO", 2);
+				(*cmd_array)[*i + 1].path = ft_strdup((*l)->content);
+			}
+			else
+				(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, env);
+		}
 		else
 			ca23(l, i, cmd_array);
 		if ((*cmd_array)[*i + 1].path == NULL)
@@ -579,7 +637,10 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
 		else
 		{
 			(*cmd_array)[*i + 1].args = gen_args(l);
-			(*cmd_array)[*i + 1].type = CMD;
+			if (flag == 1) // NEED TO CHANGE TO DETECT_BUILTIN()
+				(*cmd_array)[*i + 1].type = BUILTIN;
+			else
+				(*cmd_array)[*i + 1].type = CMD;
 		}
 	}
 }
@@ -589,7 +650,7 @@ void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
 	if (((char *)((*l)->content))[0] == ' ' || (((char *)((*l)->content))[0] == '>' && (*l)->next))
 	{
 		free((*cmd_array)[*i + *j].path);
-		(*cmd_array)[*i + *j].path = ft_substr((*l)->content, 1, ft_strlen((*l)->content) - 1);
+		(*cmd_array)[*i + *j].path = ft_strtrim2((*l)->content, " ");
 	}
 	else
 		(*cmd_array)[*i + *j].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
@@ -688,21 +749,35 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 		ft_putendl_fd(": command not found", 2);
 		exit(127);
 	}
+	ft_putendl_fd("AA", 2);
 	if (cmds[1].type == HDOC)
 		return (ft_putendl_fd("Need to manage HDOC", 2), exit(3), 0);
+	ft_putendl_fd("AB", 2);
 	fd[0] = open(cmds[0].path, O_RDONLY);
+	ft_putendl_fd("AC", 2);
 	if (fd[0] == -1)
 		return (ft_putendl_fd("Error", 2), exit(1), 0);
+
+	ft_putendl_fd("AD", 2);
 	dup2(fd[0], 0);
+	ft_putendl_fd("AE", 2);
 	close(fd[0]);
+	ft_putendl_fd("AF", 2);
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	ft_putendl_fd("AG", 2);
 	while (cmds[i].type != END)
 		do1cmd2(fd, &i, cmds);
+	ft_putendl_fd("AH", 2);
 	if (fd[1] == -1)
-		exit(1);
+		return (ft_putendl_fd("Error", 2), exit(1), 0);
+	ft_putendl_fd("AI", 2);
 	dup2(fd[1], 1);
+	ft_putendl_fd("AJ", 2);
 	close(fd[1]);
-	execve(cmds[1].path, cmds[1].args, env);
+	ft_putendl_fd("AK", 2);
+	if (execve(cmds[1].path, cmds[1].args, env))
+		ft_putendl_fd("...", 2);
+	ft_putendl_fd("AL", 2);
 	exit(1);
 }
 
@@ -734,7 +809,24 @@ void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
 		tab[1]++;
 	}
 }
-void	simulpipe(t_cmd **cmd, char **env)
+int	builtin(t_cmd *cmd, char **env)
+{
+	int fd[2];
+	int	i;
+
+	i = 2;
+	fd[0] = open(cmd[0].path, O_RDONLY);
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmd[i].type != END)
+		do1cmd2(fd, &i, cmd);
+	ft_putendl_fd("Hello word", fd[1]);
+	ft_putendl_fd("???", 2);
+	close(fd[0]);
+	close(fd[1]);
+	return (0);
+}
+
+int	simulpipe(t_cmd **cmd, char **env)
 {
 	int status;
 	int tab[3];
@@ -747,13 +839,21 @@ void	simulpipe(t_cmd **cmd, char **env)
 		tab[2] = tab[0];
 		tab[1] = 0;
 		simulpipe2(tab, *cmd, &type);
-		pid = fork();
-		if (pid == 0)
-			do1cmd(type, 0, env);
+		if (type[1].type == BUILTIN)
+		{
+			status = builtin(type, env);
+			free(type);
+		}
 		else
 		{
-			waitpid(pid, &status, 0);
-			free(type);
+			pid = fork();
+			if (pid == 0)
+				do1cmd(type, 0, env);
+			else
+			{
+				waitpid(pid, &status, 0);
+				free(type);
+			}
 		}
 	}
 	tab[0] = 0;
@@ -767,6 +867,7 @@ void	simulpipe(t_cmd **cmd, char **env)
 	}
 	free(*cmd);
 	exit(WEXITSTATUS(status));
+	return (1);
 }
 
 void	apply_flags(t_list *t_lst, int flags[])
@@ -794,7 +895,7 @@ void	apply_flags(t_list *t_lst, int flags[])
 	}
 }
 
-void	main3(t_list *t_lst[], int flags[], char **env)
+int	main3(t_list *t_lst[], int flags[], char **env)
 {
 	t_cmd	*cmds;
 	int f;
@@ -811,7 +912,8 @@ void	main3(t_list *t_lst[], int flags[], char **env)
 	ft_lstclear(&t_lst[1], &ft_del);
 	ft_putendl_fd("E", 2);
 	//ft_putendl_fd(")))", 2);
-	simulpipe(&cmds, env);
+	f = simulpipe(&cmds, env);
+	return (f);
 }
 
 void	main2(char *str, char **env, int *flag, int fd)
@@ -824,9 +926,9 @@ void	main2(char *str, char **env, int *flag, int fd)
 	char	*tempfilein[2] = {"< /tmp/tempfile ", "< /tmp/tempfile2 "};
 	char	*tempfileout[2] = {"> /tmp/tempfile ", "> /tmp/tempfile2 "};
 
-	fd = open("/tmp/tempfile", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	fd = open("/tmp/tempfile", O_RDWR | O_CREAT, 0644);
 	close(fd);
-	fd = open("/tmp/tempfile2", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	fd = open("/tmp/tempfile2", O_RDWR | O_CREAT, 0644);
 	close(fd);
 	pid = fork();
 	if (pid == -1)
@@ -858,7 +960,7 @@ void	main2(char *str, char **env, int *flag, int fd)
 		free(tab[0]);
 		while (tab[flags[4]] != NULL)
 		{
-			str = add_str(str, "| ");
+			str = add_str(str, "|");
 			str = add_str(str, tab[flags[4]]);
 			free(tab[flags[4]]);
 			flags[4] += 1;
@@ -905,7 +1007,7 @@ int	main(int c, char **v, char **env)
 			continue ; 
 		else
 		{
-			main2(str, env, &flag, fd);\
+			main2(str, env, &flag, fd);
 			unlink("/tmp/tempfile");
 			unlink("/tmp/tempfile2");
 			free(str);

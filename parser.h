@@ -5,6 +5,7 @@
 #define END 3
 #define NONE 4
 #define HDOC 5
+#define	BUILTIN 6
 
 typedef struct s_nlist
 {
