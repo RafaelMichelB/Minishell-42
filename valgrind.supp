@@ -1,0 +1,7 @@
+{
+   my_leak_suppression
+   Memcheck:Leak
+   ...
+   fun:readline
+   ...
+}
