@@ -916,6 +916,39 @@ int	main3(t_list *t_lst[], int flags[], char **env)
 	return (f);
 }
 
+t_list	*change_lst(t_list **lst)
+{
+	t_list	*new_lst;
+	t_list	*tmp_lst;
+	t_list	*cpy;
+	char	*str;
+
+	cpy = *lst;
+	new_lst = NULL;
+	tmp_lst = NULL;
+	str = cpy->next->content;
+	cpy = cpy->next->next;
+	while (cpy)
+	{
+		if (((char *)cpy->content)[0] == '<')
+		{
+			ft_lstadd_back(&new_lst, ft_lstnew(ft_strdup("<")));
+			ft_lstadd_back(&new_lst, ft_lstnew(ft_strdup(cpy->next->content)));
+			cpy = cpy->next;
+		}
+		else
+			ft_lstadd_back(&tmp_lst, ft_lstnew(ft_strdup(cpy->content)));
+		cpy = cpy->next;
+	}
+	if (new_lst == NULL)
+		new_lst = tmp_lst;
+	else
+		ft_lstlast(new_lst)->next = tmp_lst;
+	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup(str)));
+	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup("<")));
+	return (new_lst);
+}
+
 void	main2(char *str, char **env, int *flag, int fd)
 {
 	t_nlist	*lst;
@@ -970,6 +1003,13 @@ void	main2(char *str, char **env, int *flag, int fd)
 			flags[flags[4]] = 0;
 		lst = create_stack_1(str);
 		t_lst[0] = create_stack3(lst);
+		t_lst[0] = change_lst(&(t_lst[0]));
+		while (t_lst[0])
+		{
+			ft_putendl_fd(t_lst[0]->content, 2);
+			t_lst[0] = t_lst[0]->next;
+		}
+		exit(5);
 		t_lst[1] = interpret_quotes(t_lst[0], *flag);
 		ft_lstclear(&(t_lst[0]), &ft_del);
 		nlstclear(&lst);
