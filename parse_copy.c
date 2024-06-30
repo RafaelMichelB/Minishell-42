@@ -623,7 +623,7 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
 		if (is_in_str('/', (*l)->content) == 0)
 		{
 			ft_putendl_fd((*l)->content, 2);
-			if (ft_strncmp("built", ft_strtrim2((*l)->content, " "), 6) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
+			if (ft_strncmp("cd", ft_strtrim2((*l)->content, " "), 6) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
 			{
 				flag = 1;
 				ft_putendl_fd("OOOOO", 2);
@@ -843,22 +843,81 @@ void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
 		tab[1]++;
 	}
 }
+
+int	count_size_args(char **arg)
+{
+	int	i;
+
+	i = 0;
+	while (arg[i])
+		i++;
+	return (i);
+}
+
+int	bltin_cd(t_cmd cmd)
+{
+	if (count_size_args(cmd.args) > 2)
+	{
+		ft_putendl_fd("bash : cd : trop d'arguments", 2);
+		return (1);
+	}
+	if (count_size_args(cmd.args) == 1)
+	{
+		chdir(getenv("HOME"));
+		return (0);
+	}
+	if (access(cmd.args[1], F_OK) == -1)
+	{
+		ft_putstr_fd("bash : cd : ", 2);
+		ft_putstr_fd(cmd.args[1], 2);
+		ft_putendl_fd(" : Aucun fichier ou dossier de ce nom", 2);
+		return (1);
+	}
+	ft_putendl_fd("Almost Done", 2);
+	if (chdir(cmd.args[1]) != 0)
+	{
+		perror("chdir ");
+		return (1);
+	}
+	ft_putendl_fd("Done", 2);
+	return (0);
+}
+
 int	builtin(t_cmd *cmd, char **env)
 {
 	int fd[2];
 	int	i;
+	int	j;
+	int k;
 
-	i = 2;
-	fd[0] = open(cmd[0].path, O_RDONLY);
+	i = 0;
+	while (cmd[i].type == RED_IN)
+	{
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			exit(127);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	j = i;
+	i++;
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmd[i].type != END)
 		do1cmd2(fd, &i, cmd);
-	ft_putendl_fd("Hello word", fd[1]);
+	k = bltin_cd(cmd[j]);
+//	ft_putstr_fd("Hello world", fd[1]);
 	ft_putendl_fd("???", 2);
 	close(fd[0]);
 	close(fd[1]);
-	return (0);
+	return (k);
 }
+
 
 int	simulpipe(t_cmd **cmd, char **env)
 {
