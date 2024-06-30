@@ -663,12 +663,12 @@ void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
 		(*cmd_array)[*i + *j].path = ft_substr((*l)->next->next->content, 0, ft_strlen((*l)->next->next->content));
 }
 
-int	ca3(t_list **l, int *i, t_cmd **cmd_array, char **env, int *j)
+int	ca3(t_list **l, int tab[], t_cmd **cmd_array, char **env)
 {
-	ca32(l, i, cmd_array, j);
-	(*cmd_array)[*i + *j].args = NULL;
-	if ((*cmd_array)[*i + *j].type != RED_APP)
-		(*cmd_array)[*i + *j].type = RED_OUT;
+	ca32(l, &(tab[0]), cmd_array, &(tab[1]));
+	(*cmd_array)[tab[0] + tab[1]].args = NULL;
+	if ((*cmd_array)[tab[0] + tab[1]].type != RED_APP)
+		(*cmd_array)[tab[0] + tab[1]].type = RED_OUT;
 	if (((char *)((*l)->content))[0] != '>')
 		(*l) = (*l)->next;
 	if ((*l) && ((char *)((*l)->content))[0] != '|' && ((char *)((*l)->content))[0] != '>')
@@ -679,35 +679,36 @@ int	ca3(t_list **l, int *i, t_cmd **cmd_array, char **env, int *j)
 	{
 		while (((char *)((*l)->content))[0] != '>')
 			(*l) = (*l)->next;
-		if (ft_strlen((*cmd_array)[*i + *j].path) != 0)
-			(*cmd_array)[*i + *j + 1].type = RED_APP;
+		if (ft_strlen((*cmd_array)[tab[0] + tab[1]].path) != 0)
+			(*cmd_array)[tab[0] + tab[1] + 1].type = RED_APP;
 		else
-			(*cmd_array)[*i + *j].type = RED_APP;
+			(*cmd_array)[tab[0] + tab[1]].type = RED_APP;
 	}
-	if (ft_strlen((*cmd_array)[*i + *j].path) != 0)
-		(*j)++;
+	if (ft_strlen((*cmd_array)[tab[0] + tab[1]].path) != 0)
+		(tab[1])++;
 	return (0);
 }
 
-t_cmd	*create_args(t_list *l, int i, char **env)
+t_cmd	*create_args(t_list *l, char **env)
 {
 	t_cmd	*cmd_array;
-	int		j;
+	int		tab[2]; // i = tab[0] || j = tab[1]
 
-	j = 2;
+	tab[0] = 0;
+	tab[1] = 2;
 	cmd_array = ft_calloc(ft_lstsize(l), sizeof(t_cmd));
 	//if (((char *)(l->content))[0] == '<')
 	//	l = l->next;
 	while (l)
 	{
 		ft_putendl_fd(l->content, 2);
-		ca2(&l, &i, &cmd_array, env);
+		ca2(&l, &(tab[0]), &cmd_array, env);
 		//l = l->next;
 		while (l->next && ((char *)(l->next->content))[0] != '<')
 		{
 			ft_putstr_fd("VALUE :", 2);
 			ft_putendl_fd(l->content, 2);
-			ca3(&l, &i, &cmd_array, env, &j);
+			ca3(&l, tab, &cmd_array, env);
 		}
 		//while (l && ((char *)(l->content))[0] != '<')
 		//	l = l->next;
@@ -719,24 +720,24 @@ t_cmd	*create_args(t_list *l, int i, char **env)
 		}
 		if (l)
 			l = l->next;
-		i += j;
-		j = 2;
+		tab[0] += tab[1];
+		tab[1] = 2;
 	}
-	cmd_array[i].type = END;
-	i = 0;
-	while (cmd_array[i].type != END)
+	cmd_array[tab[0]].type = END;
+	tab[0] = 0;
+	while (cmd_array[tab[0]].type != END)
 	{
-		ft_putstr_fd(cmd_array[i].path, 2);
-		j = -1;
+		ft_putstr_fd(cmd_array[tab[0]].path, 2);
+		tab[1] = -1;
 		ft_putchar_fd('|', 2);
-		while (cmd_array[i].args && cmd_array[i].args[++j])
+		while (cmd_array[tab[0]].args && cmd_array[tab[0]].args[++(tab[1])])
 		{
-			ft_putstr_fd(cmd_array[i].args[j], 2);
+			ft_putstr_fd(cmd_array[tab[0]].args[tab[1]], 2);
 			ft_putchar_fd('|', 2);
 		}
-		ft_putnbr_fd(cmd_array[i].type, 2);
+		ft_putnbr_fd(cmd_array[tab[0]].type, 2);
 		ft_putchar_fd('\n', 2);
-		i++;
+		(tab[0])++;
 	}
 	return (cmd_array);
 }
@@ -770,7 +771,7 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 			ft_putstr_fd("bash: ", 2);
 			ft_putstr_fd(cmds[i - 1].path, 2);
 			ft_putendl_fd(": No such file or directory", 2);
-			flag = 1;
+			exit(127);
 		}
 		if (fd[0] != -1)
 			close(fd[0]);
@@ -779,8 +780,6 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 	}
 	j = i;
 	i++;
-	if (flag == 1)
-		exit(127);
 	if (cmds[i - 1].type == HDOC)
 		return (ft_putendl_fd("Need to manage HDOC", 2), exit(3), 0);
 	if (cmds[i - 1].type == NONE)
@@ -942,7 +941,7 @@ int	main3(t_list *t_lst[], int flags[], char **env)
 	ft_putendl_fd("B", 2);
 	t_lst[0] = t_lst[1];
 	ft_putendl_fd("C", 2);
-	cmds = create_args(t_lst[1], 0, env);
+	cmds = create_args(t_lst[1], env);
 	ft_putendl_fd("D", 2);
 	ft_lstclear(&t_lst[1], &ft_del);
 	ft_putendl_fd("E", 2);
