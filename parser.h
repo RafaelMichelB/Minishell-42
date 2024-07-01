@@ -19,3 +19,17 @@ typedef struct s_cmd
 	char	*path;
 	char	**args;
 } t_cmd;
+
+typedef struct s_env
+{
+	char		*key;
+	char		*value;
+	struct s_env	*next;
+} t_env;
+
+typedef struct s_data
+{
+	int		flag;
+	int		status;
+	struct s_env	*env;
+} t_data;

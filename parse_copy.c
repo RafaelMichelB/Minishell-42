@@ -9,6 +9,173 @@
 #include <readline/history.h>
 #include <termios.h>
 
+char	*ft_getenv(char *s, t_env *env);
+void    add_env_line(t_env **env, t_env *node);
+t_env   *init_env_line(char *key, char *value);
+
+t_env	*read_env(int fd)
+{
+	t_env	*env;
+	char	**split;
+	char	*str;
+
+	env = NULL;
+	str = get_next_line(fd);
+	while (str)
+	{
+		split = ft_split(str, '=');
+		if (split[1])
+			add_env_line(&env, init_env_line(ft_strtrim(split[0], "\n"), ft_strtrim(split[1], "\n")));
+		else
+			add_env_line(&env, init_env_line(ft_strtrim(split[0], "\n"), NULL));
+		free(split);
+		str = get_next_line(fd);
+	}
+	/*while (env)
+	{
+		printf("%s=%s\n", env->key, env->value);
+		env = env->next;
+	}*/
+	return (env);
+}
+
+void	put_env(t_env *my_env, char *file)
+{
+	int fd;
+	
+	fd = open(file, O_RDWR, O_TRUNC);
+	if (fd == -1)
+		printf("Error opening file: %s\n", strerror(errno));
+	while (my_env)
+	{
+		ft_putstr_fd(my_env->key, fd);
+		ft_putstr_fd("=", fd);
+		if (my_env->value)
+			ft_putendl_fd(my_env->value, fd);
+		else
+			ft_putstr_fd("\n", fd);
+		my_env = my_env->next;
+	}
+	close(fd);
+}
+
+char	*ft_strjoin3elem(char *s1, char *s2, char *s3)
+{
+	char	*ret;
+	char	*ret2;
+
+	ret = ft_strjoin(s1, s2);
+	if (s3)
+		ret2 = ft_strjoin(ret, s3);
+	else
+		ret2 = ft_strjoin(ret, "");
+	free(ret);
+	return (ret2);
+}
+
+char	**convert_array(t_env *env)
+{
+	char	**nenv;
+	t_env	*cpy;
+	int	size;
+	char	*str;
+
+	cpy = env;
+	size = 0;
+	while (cpy)
+	{
+		size++;
+		cpy = cpy->next;
+	}
+	nenv = malloc((size + 1) * sizeof(char *));
+	nenv[size] = NULL;
+	size = 0;
+	while (env)
+	{
+		nenv[size] = ft_strjoin3elem(env->key, "=", env->value);
+		size++;
+		env = env->next;
+	}
+	return (nenv);
+	
+}
+
+t_env	*init_env_line(char *key, char *value)
+{
+	t_env	*env_node;
+
+	env_node = malloc(sizeof(t_env));
+	env_node->key = key;
+	env_node->value = value;
+	env_node->next = NULL;
+	return (env_node);
+}
+
+t_env *envlast(t_env *lst)
+{
+	t_env *last;
+	
+	last = NULL;
+	while (lst)
+	{
+		last = lst;
+		lst = lst->next;
+	}
+	return (last);
+}
+
+void	add_env_line(t_env **env, t_env *node)
+{
+	t_env *elem;
+	
+	if (env && node)
+	{
+		elem = envlast(*env);
+		if (!elem)
+			*env = node;
+		if (elem)
+			elem -> next = node;
+		node -> next = NULL;
+	}
+}
+
+void	env_clear(t_env **env)
+{
+	t_env *tmp;
+
+	while (*env)
+	{
+		tmp = *env;
+		free((*env)->key);
+		free((*env)->value);
+		(*env) = (*env)->next;
+		free(tmp);
+		tmp = NULL;
+	}
+}
+
+t_env	*generate_env(char **env)
+{
+	char	**split;
+	t_env	*my_env;
+	int	i;
+
+	i = 0;
+	my_env = NULL;
+	while (env[i])
+	{
+		//printf("%s\n", env[i]);
+		split = ft_split(env[i], '='); //Change to split only on the first =
+		//printf("%s\n%s\n", split[0], split[1]);
+		if (split[1])
+			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), ft_strdup(split[1])));
+		else
+			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), NULL));
+		i++;
+		ft_free(split);
+	}
+	return (my_env);
+}
 
 char	*ft_strtrim2(char const *s1, char const *set)
 {
@@ -310,7 +477,7 @@ void	iq42(t_nlist *stacks[], char *strs[], int flag)
 	}
 }
 
-void	iq4(t_nlist *stacks[], char *strs[], int flag)
+void	iq4(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 {
 	if (stacks[2]->c == '$')
 	{
@@ -327,7 +494,7 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag)
 			}
 			strs[1] = join_stack(stacks[1]);
 			nlstclear(&stacks[1]);
-			strs[0] = add_str(strs[0], getenv(strs[1]));
+			strs[0] = add_str(strs[0], ft_getenv(strs[1], env));
 			free(strs[1]);
 		}
 	}	
@@ -339,7 +506,7 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag)
 	}
 }
 
-void	iq32(t_nlist *stacks[], char *strs[], int flag)
+void	iq32(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 {
 	stacks[2] = stacks[2]->next;
 	if (stacks[2]->c == ' ' || stacks[2]->c == '"')
@@ -370,18 +537,18 @@ void	iq32(t_nlist *stacks[], char *strs[], int flag)
 		}
 		strs[1] = join_stack(stacks[1]);
 		nlstclear(&stacks[1]);
-		strs[0] = add_str(strs[0], getenv(strs[1]));
+		strs[0] = add_str(strs[0], ft_getenv(strs[1], env));
 		free(strs[1]);
 	}
 }
 
-void	iq3(t_nlist *stacks[], char *strs[], int flag)
+void	iq3(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 {
 	stacks[2] = stacks[2]->next;
 	while (stacks[2]->c != '\"')
 	{
 		if (stacks[2]->c == '$')
-			iq32(stacks, strs, flag);
+			iq32(stacks, strs, flag, env);
 		else
 		{
 			strs[2][0] = stacks[2]->c;
@@ -404,17 +571,17 @@ void	iq2(t_nlist *stacks[], char *strs[])
 	stacks[2] = stacks[2]->next;
 }
 
-void	iq12(t_nlist *stacks[], char *strs[], int flag)
+void	iq12(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 {
 	if (stacks[2]->c == '\'')
 		iq2(stacks, strs);
 	else if (stacks[2]->c == '\"')
-		iq3(stacks, strs, flag);
+		iq3(stacks, strs, flag, env);
 	else
-		iq4(stacks, strs, flag);
+		iq4(stacks, strs, flag, env);
 }
 
-t_list	*interpret_quotes(t_list *lst, int flag)
+t_list	*interpret_quotes(t_list *lst, int flag, t_env *env)
 {
 	t_list	*ret;
 	t_nlist	*stacks[3];
@@ -429,7 +596,7 @@ t_list	*interpret_quotes(t_list *lst, int flag)
 		stacks[0] = create_stack_1(lst->content);
 		stacks[2] = stacks[0];
 		while (stacks[2])
-			iq12(stacks, strs, flag);
+			iq12(stacks, strs, flag, env);
 		ft_lstadd_back(&ret, ft_lstnew(ft_strdup(strs[0])));
 		free(strs[0]);
 		nlstclear(&(stacks[0]));
@@ -561,10 +728,12 @@ int	only_in2(char *str, char c, char c2)
 	return (1);
 }
 
-t_cmd	handle_hdoc(t_list **l, char **env)
+t_cmd	handle_hdoc(t_list **l, t_env *menv)
 {
 	t_cmd	cmd;
+	char	**env;
 
+	env = convert_array(menv);
 	if (is_in_str('/', (*l)->content) == 0)
 		cmd.path = find_nice_path((*l)->content, env);
 	else
@@ -578,6 +747,7 @@ t_cmd	handle_hdoc(t_list **l, char **env)
 	ft_putendl_fd((*l)->content, 2);
 	cmd.args = gen_args(l);
 	cmd.type = HDOC;
+	ft_free(env);
 	return (cmd);
 }
 
@@ -597,9 +767,10 @@ void	ca22(t_list **l, int *i, t_cmd **cmd_array)
 		(*cmd_array)[*i].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 }
 
-void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
+void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 {
 	int	flag;
+	char	**nenv;
 
 	flag = 0;
 	while (((char *)((*l)->content))[0] == '<')
@@ -630,7 +801,11 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, char **env)
 				(*cmd_array)[*i + 1].path = ft_strdup((*l)->content);
 			}
 			else
-				(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, env);
+			{
+				nenv = convert_array(env);
+				(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, nenv);
+				ft_free(nenv);
+			}
 		}
 		else
 			ca23(l, i, cmd_array);
@@ -663,7 +838,7 @@ void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
 		(*cmd_array)[*i + *j].path = ft_substr((*l)->next->next->content, 0, ft_strlen((*l)->next->next->content));
 }
 
-int	ca3(t_list **l, int tab[], t_cmd **cmd_array, char **env)
+int	ca3(t_list **l, int tab[], t_cmd **cmd_array)
 {
 	ca32(l, &(tab[0]), cmd_array, &(tab[1]));
 	(*cmd_array)[tab[0] + tab[1]].args = NULL;
@@ -689,7 +864,7 @@ int	ca3(t_list **l, int tab[], t_cmd **cmd_array, char **env)
 	return (0);
 }
 
-t_cmd	*create_args(t_list *l, char **env)
+t_cmd	*create_args(t_list *l, t_env *env)
 {
 	t_cmd	*cmd_array;
 	int		tab[2]; // i = tab[0] || j = tab[1]
@@ -708,7 +883,7 @@ t_cmd	*create_args(t_list *l, char **env)
 		{
 			ft_putstr_fd("VALUE :", 2);
 			ft_putendl_fd(l->content, 2);
-			ca3(&l, tab, &cmd_array, env);
+			ca3(&l, tab, &cmd_array);
 		}
 		//while (l && ((char *)(l->content))[0] != '<')
 		//	l = l->next;
@@ -844,6 +1019,17 @@ void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
 	}
 }
 
+char	*ft_getenv(char *s, t_env *env)
+{
+	while (env)
+	{
+		if (ft_strncmp(s, env->key, 2147483647) == 0)
+			return (env->value);
+		env = env->next;
+	}
+	return (NULL);
+}
+
 int	count_size_args(char **arg)
 {
 	int	i;
@@ -854,7 +1040,7 @@ int	count_size_args(char **arg)
 	return (i);
 }
 
-int	bltin_cd(t_cmd cmd)
+int	bltin_cd(t_cmd cmd, t_env *env)
 {
 	if (count_size_args(cmd.args) > 2)
 	{
@@ -863,7 +1049,7 @@ int	bltin_cd(t_cmd cmd)
 	}
 	if (count_size_args(cmd.args) == 1)
 	{
-		chdir(getenv("HOME"));
+		chdir(ft_getenv("HOME", env));
 		return (0);
 	}
 	if (access(cmd.args[1], F_OK) == -1)
@@ -883,14 +1069,42 @@ int	bltin_cd(t_cmd cmd)
 	return (0);
 }
 
-int	builtin(t_cmd *cmd, char **env)
+t_env	*change_env(char *s, t_env *env, char *s2)
+{
+	t_env	*cp;
+	t_env	*cpy;
+
+	cp = env;
+	cpy = NULL;
+	while (env)
+	{
+		if (ft_strncmp(env->key, s2, 2147483647) == 0)
+		{
+			ft_putendl_fd("UUUUUU", 2);
+			add_env_line(&cpy, init_env_line(ft_strdup(env->key), s));
+		}
+		else
+			if (env->value)
+				add_env_line(&cpy, init_env_line(ft_strdup(env->key), ft_strdup(env->value)));
+			else
+				add_env_line(&cpy, init_env_line(ft_strdup(env->key), NULL));
+		env = env->next;
+	}
+	env_clear(&cp);
+	return (cpy);
+}
+
+int	builtin(t_cmd *cmd, t_env *env)
 {
 	int fd[2];
 	int	i;
 	int	j;
 	int k;
+	char	*str[2];
+	char	cwd[1024];
 
 	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
 	while (cmd[i].type == RED_IN)
 	{
 		if (fd[0] == -1)
@@ -910,21 +1124,30 @@ int	builtin(t_cmd *cmd, char **env)
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmd[i].type != END)
 		do1cmd2(fd, &i, cmd);
-	k = bltin_cd(cmd[j]);
+	str[0] = ft_getenv("PWD", env);
+	k = bltin_cd(cmd[j], env);
+	getcwd(cwd, 1024);
+	printf("%s\n%s\n", str[0], cwd);
+	env = change_env(ft_strdup(str[0]), env, "OLDPWD");
+	env = change_env(ft_strdup(cwd), env, "PWD");
+	put_env(env, "/tmp/env.env");
+	printf("PWD: %s\nOLD: %s\n", ft_getenv("PWD", env), ft_getenv("OLDPWD", env));
+	//ft_putendl_fd(cwd, 2);
 //	ft_putstr_fd("Hello world", fd[1]);
-	ft_putendl_fd("???", 2);
+//	ft_putendl_fd("???", 2);
 	close(fd[0]);
 	close(fd[1]);
 	return (k);
 }
 
 
-int	simulpipe(t_cmd **cmd, char **env)
+int	simulpipe(t_cmd **cmd, t_env *env)
 {
 	int status;
 	int tab[3];
 	t_cmd *type;
 	pid_t pid;
+	char	**nenv;
 
 	tab[0] = 0;
 	while ((*cmd)[tab[0]].type != END)
@@ -939,13 +1162,15 @@ int	simulpipe(t_cmd **cmd, char **env)
 		}
 		else
 		{
+			nenv = convert_array(env);
 			pid = fork();
 			if (pid == 0)
-				do1cmd(type, 0, env);
+				do1cmd(type, 0, nenv);
 			else
 			{
 				waitpid(pid, &status, 0);
 				free(type);
+				ft_free(nenv);
 			}
 		}
 	}
@@ -988,7 +1213,7 @@ void	apply_flags(t_list *t_lst, int flags[])
 	}
 }
 
-int	main3(t_list *t_lst[], int flags[], char **env)
+int	main3(t_list *t_lst[], int flags[], t_env *env)
 {
 	t_cmd	*cmds;
 	int f;
@@ -1064,7 +1289,7 @@ t_list	*change_lst(t_list **lst)
 	return (new_lst);
 }
 
-void	main2(char *str, char **env, int *flag, int fd)
+void	main2(char *str, t_env *env, int *flag, int fd)
 {
 	t_nlist	*lst;
 	t_list	*t_lst[2];
@@ -1119,8 +1344,7 @@ void	main2(char *str, char **env, int *flag, int fd)
 		lst = create_stack_1(str);
 		t_lst[0] = create_stack3(lst);
 		t_lst[0] = change_lst(&(t_lst[0]));
-		
-		t_lst[1] = interpret_quotes(t_lst[0], *flag);
+		t_lst[1] = interpret_quotes(t_lst[0], *flag, env);
 		ft_lstclear(&(t_lst[0]), &ft_del);
 		/*while (t_lst[1])
 		{
@@ -1132,10 +1356,22 @@ void	main2(char *str, char **env, int *flag, int fd)
 		ft_putendl_fd(str, 2);
 		free(tab);
 		free(str);
+
 		main3(t_lst, flags, env);
 	}
 	else
 	{
+		/*char cdw[1024];
+		getcwd(cdw, 1024);
+		printf("---------------------------------------\n");
+		printf("CWD: %s\n", cdw);
+		printf("---------------------------------------\n");
+		while(env)
+		{
+			printf("%s=%s\n", env->key, env->value);
+			env = env->next;
+		}
+		printf("---------------------------------------\n");*/
 		waitpid(pid, &(flags[5]), 0);
 		*flag = WEXITSTATUS(flags[5]);
 	}
@@ -1146,7 +1382,42 @@ int	main(int c, char **v, char **env)
 	int		flag;
 	int		fd;
 	char	*str;
+	t_env	*my_env;
+	char	*s[2];
+	char	cwd[1024];
 
+	fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	close(fd);
+	my_env = generate_env(env);
+	put_env(my_env, "/tmp/env.env");
+	/*fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	while (my_env)
+	{
+		ft_putstr_fd(my_env->key, fd);
+		ft_putstr_fd("=", fd);
+		if (my_env->value)
+			ft_putendl_fd(my_env->value, fd);
+		else
+			ft_putstr_fd("\n", fd);
+		my_env = my_env->next;
+	}
+	close(fd);*/
+	fd = open("env.env", O_RDWR);
+	my_env = read_env(fd);
+	close(fd);
+	//exit(5);
+	/*my_env = change_env(ft_strdup("CHANGED"), my_env, "PWD");
+	char **nenv = convert_array(my_env);
+	flag = -1;
+	while (nenv[++flag])
+		printf("%s\n", nenv[flag]);
+	exit(6);
+	while (my_env)
+	{
+		printf("%s=%s\n", my_env->key, my_env->value);
+		my_env = my_env->next;
+	}
+	exit(6);*/
 	flag = -1;
 	while (1)
 	{
@@ -1155,6 +1426,7 @@ int	main(int c, char **v, char **env)
 			add_history(str);
 		if (ft_strncmp(str, "exit", 5) == 0)
 		{
+			unlink("/tmp/env.env");
 			free(str);
 			rl_clear_history();
 			return (0);
@@ -1163,10 +1435,31 @@ int	main(int c, char **v, char **env)
 			continue ; 
 		else
 		{
-			main2(str, env, &flag, fd);
+			t_cmd	cmd;
+			cmd.path = "cd";
+			cmd.args = ft_calloc(3, sizeof(char *));
+			cmd.args[0] = "cd";
+			cmd.args[1] = ft_getenv("PWD", my_env);
+			cmd.args[2] = NULL;
+			bltin_cd(cmd, my_env);
+			main2(str, my_env, &flag, fd);
 			unlink("/tmp/tempfile");
 			unlink("/tmp/tempfile2");
 			free(str);
+			fd = open("/tmp/env.env", O_RDWR);
+			t_env *ne = read_env(fd);
+			env = convert_array(ne);
+			while (ne)
+			{
+				if (strcmp(ne->key, "PWD") == 0)
+					printf("%s=%s\n", ne->key, ne->value);
+				ne = ne->next;
+			}
+			close(fd);
+			fd = open("/tmp/env.env", O_RDWR);
+			my_env = read_env(fd);
+			if (fd != -1)
+				close(fd);
 		}
 	}
 	return (1);
