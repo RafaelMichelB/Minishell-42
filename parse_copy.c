@@ -767,6 +767,13 @@ void	ca22(t_list **l, int *i, t_cmd **cmd_array)
 		(*cmd_array)[*i].path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 }
 
+int	detect_builtin(char *str)
+{
+	if (ft_strncmp("cd", str, 2147483647) == 0 || ft_strncmp("echo", str, 2147483647) == 0)
+		return (0);
+	return (1);
+}
+
 void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 {
 	int	flag;
@@ -794,7 +801,7 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 		if (is_in_str('/', (*l)->content) == 0)
 		{
 			ft_putendl_fd((*l)->content, 2);
-			if (ft_strncmp("cd", ft_strtrim2((*l)->content, " "), 6) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
+			if (detect_builtin(ft_strtrim2((*l)->content, " ")) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
 			{
 				flag = 1;
 				ft_putendl_fd("OOOOO", 2);
@@ -1036,7 +1043,9 @@ int	count_size_args(char **arg)
 
 	i = 0;
 	while (arg[i])
+	{
 		i++;
+	}
 	return (i);
 }
 
@@ -1069,32 +1078,32 @@ int	bltin_cd(t_cmd cmd, t_env *env)
 	return (0);
 }
 
-t_env	*change_env(char *s, t_env *env, char *s2)
+t_env	*change_env(char *s, t_env **env, char *s2)
 {
-	t_env	*cp;
+	t_env	**cp;
 	t_env	*cpy;
 
 	cp = env;
 	cpy = NULL;
-	while (env)
+	while (*env)
 	{
-		if (ft_strncmp(env->key, s2, 2147483647) == 0)
+		if (ft_strncmp((*env)->key, s2, 2147483647) == 0)
 		{
 			ft_putendl_fd("UUUUUU", 2);
-			add_env_line(&cpy, init_env_line(ft_strdup(env->key), s));
+			add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), s));
 		}
 		else
-			if (env->value)
-				add_env_line(&cpy, init_env_line(ft_strdup(env->key), ft_strdup(env->value)));
+			if ((*env)->value)
+				add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), ft_strdup((*env)->value)));
 			else
-				add_env_line(&cpy, init_env_line(ft_strdup(env->key), NULL));
-		env = env->next;
+				add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), NULL));
+		*env = (*env)->next;
 	}
-	env_clear(&cp);
+	env_clear(cp);
 	return (cpy);
 }
 
-int	builtin(t_cmd *cmd, t_env *env)
+int	builtin_cd_prep(t_cmd *cmd, t_env **env)
 {
 	int fd[2];
 	int	i;
@@ -1112,39 +1121,159 @@ int	builtin(t_cmd *cmd, t_env *env)
 			ft_putstr_fd("bash: ", 2);
 			ft_putstr_fd(cmd[i - 1].path, 2);
 			ft_putendl_fd(": No such file or directory", 2);
-			exit(127);
+			return (127);
 		}
 		if (fd[0] != -1)
 			close(fd[0]);
 		fd[0] = open(cmd[i].path, O_RDONLY);
 		i++;
 	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (127);
+	}
 	j = i;
 	i++;
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmd[i].type != END)
 		do1cmd2(fd, &i, cmd);
-	str[0] = ft_getenv("PWD", env);
-	k = bltin_cd(cmd[j], env);
+	str[0] = ft_getenv("PWD", *env);
+	k = bltin_cd(cmd[j], *env);
 	getcwd(cwd, 1024);
 	printf("%s\n%s\n", str[0], cwd);
-	env = change_env(ft_strdup(str[0]), env, "OLDPWD");
-	env = change_env(ft_strdup(cwd), env, "PWD");
-	put_env(env, "/tmp/env.env");
-	printf("PWD: %s\nOLD: %s\n", ft_getenv("PWD", env), ft_getenv("OLDPWD", env));
-	//ft_putendl_fd(cwd, 2);
-//	ft_putstr_fd("Hello world", fd[1]);
-//	ft_putendl_fd("???", 2);
+	(*env) = change_env(ft_strdup(str[0]), env, "OLDPWD");
+	(*env) = change_env(ft_strdup(cwd), env, "PWD");
+	//put_env(env, "/tmp/env.env");
+	printf("PWD: %s\nOLD: %s\n", ft_getenv("PWD", *env), ft_getenv("OLDPWD", *env));
 	close(fd[0]);
 	close(fd[1]);
 	return (k);
 }
 
+void	escape_print(char c, int fd)
+{
+	if (c == 'n')
+		ft_putstr_fd("\n", fd);
+	else if (c == 't')
+		ft_putstr_fd("\t", fd);
+	else if (c == '\\')
+		ft_putstr_fd("\\", fd);
+	else if (c == '"')
+		ft_putstr_fd("\"", fd);
+	else if (c == '\'')
+		ft_putstr_fd("\'", fd);
+	else if (c == 'r')
+		ft_putstr_fd("\r", fd);
+	else if (c == 'b')
+		ft_putstr_fd("\b", fd);
+	else
+		printf("\\%c", c); // QUELS CAS ????
+}
 
-int	simulpipe(t_cmd **cmd, t_env *env)
+void	print_arg(char *arg, int fd)
+{
+	int	i;
+
+	i = 0;
+	while (arg[i] != '\0')
+	{
+		if (arg[i] == '\\')
+		{
+			i++;
+			escape_print(arg[i], fd);
+		}
+		else
+			ft_putchar_fd(arg[i], fd);
+		i++;
+	}
+}
+
+void	bltin_echo(t_cmd cmd, int fd)
+{
+	int	i;
+	int	new_line;
+
+	i = 1;
+	new_line = 1;
+	if (ft_strncmp(cmd.args[1], "-n", 10) == 0)
+	{
+		if (count_size_args(cmd.args) <= 2)
+		{
+			ft_putstr_fd("need more args\n", 2);
+			return ;
+		}
+		new_line = 0;
+		i = 2;
+	}
+	while (i < count_size_args(cmd.args))
+	{
+		print_arg(cmd.args[i], fd);
+		i++;
+		if (i < count_size_args(cmd.args))
+			ft_putstr_fd(" ", fd);
+	}
+	if (new_line == 1)
+		ft_putstr_fd("\n", fd);
+}
+
+int	builtin_echo_prep(t_cmd *cmd, t_env **env)
+{
+	int	i;
+	int	j;
+	int	fd[2];
+
+	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
+	while (cmd[i].type == RED_IN)
+	{
+		ft_putendl_fd("LLL", 2);
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			return (1);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (1);
+	}
+	j = i;
+	ft_putendl_fd(ft_itoa(j), 2);
+	i++;
+	ft_putendl_fd(ft_itoa(j), 2);
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	ft_putendl_fd(ft_itoa(j), 2);
+	while (cmd[i].type != END)
+	{
+		ft_putendl_fd(ft_itoa(j), 2);
+		do1cmd2(fd, &i, cmd);
+	}
+	ft_putendl_fd(ft_itoa(j), 2);
+	if (count_size_args(cmd[j].args) <= 1)
+	{
+		ft_putstr_fd("need more args\n", 2);
+		return (1);
+	}
+	bltin_echo(cmd[j], fd[1]);
+	return (0);
+}
+
+int	simulpipe(t_cmd **cmd, t_env **env)
 {
 	int status;
-	int tab[3];
+	int tab[5];
 	t_cmd *type;
 	pid_t pid;
 	char	**nenv;
@@ -1155,14 +1284,22 @@ int	simulpipe(t_cmd **cmd, t_env *env)
 		tab[2] = tab[0];
 		tab[1] = 0;
 		simulpipe2(tab, *cmd, &type);
-		if (type[1].type == BUILTIN)
+		tab[3] = 0;
+		while (type[tab[3]].type == RED_IN)
+			tab[3]++;
+		if (type[tab[3]].type == BUILTIN)
 		{
-			status = builtin(type, env);
+			tab[4] = 1;
+			if (ft_strncmp(type[tab[3]].path, "cd", 2147483647) == 0)
+				status = builtin_cd_prep(type, env);
+			else if (ft_strncmp(type[tab[3]].path, "echo", 2147483647) == 0)
+				status = builtin_echo_prep(type, env);
 			free(type);
 		}
 		else
 		{
-			nenv = convert_array(env);
+			tab[4] = 0;
+			nenv = convert_array(*env);
 			pid = fork();
 			if (pid == 0)
 				do1cmd(type, 0, nenv);
@@ -1184,8 +1321,10 @@ int	simulpipe(t_cmd **cmd, t_env *env)
 		(tab[0])++;
 	}
 	free(*cmd);
-	exit(WEXITSTATUS(status));
-	return (1);
+	if (tab[4] == 1)
+		return (status);
+	else
+		return (WEXITSTATUS(status));
 }
 
 void	apply_flags(t_list *t_lst, int flags[])
@@ -1213,7 +1352,7 @@ void	apply_flags(t_list *t_lst, int flags[])
 	}
 }
 
-int	main3(t_list *t_lst[], int flags[], t_env *env)
+/*int	main3(t_list *t_lst[], int flags[], t_env *env)
 {
 	t_cmd	*cmds;
 	int f;
@@ -1232,7 +1371,7 @@ int	main3(t_list *t_lst[], int flags[], t_env *env)
 	//ft_putendl_fd(")))", 2);
 	f = simulpipe(&cmds, env);
 	return (f);
-}
+}*/
 
 t_list	*lstdup(t_list *lst)
 {
@@ -1289,7 +1428,7 @@ t_list	*change_lst(t_list **lst)
 	return (new_lst);
 }
 
-void	main2(char *str, t_env *env, int *flag, int fd)
+void	main2(char *str, t_env **env, int *flag, int fd)
 {
 	t_nlist	*lst;
 	t_list	*t_lst[2];
@@ -1298,83 +1437,70 @@ void	main2(char *str, t_env *env, int *flag, int fd)
 	char	**tab;
 	char	*tempfilein[2] = {"< /tmp/tempfile ", "< /tmp/tempfile2 "};
 	char	*tempfileout[2] = {"> /tmp/tempfile ", "> /tmp/tempfile2 "};
+	t_cmd	*cmds;
 
 	fd = open("/tmp/tempfile", O_RDWR | O_CREAT, 0644);
 	close(fd);
 	fd = open("/tmp/tempfile2", O_RDWR | O_CREAT, 0644);
 	close(fd);
-	pid = fork();
+	flags[4] = 0;
+	tab = ft_split(str, '|');
+	while (tab[flags[4]] != NULL)
+	{
+		if (tab[flags[4]][0] != '<')
+		{
+			if (flags[4] == 0)
+				tab[flags[4]] = add_str2("< /dev/stdin ", &(tab[flags[4]]));
+			else
+				tab[flags[4]] = add_str2(tempfilein[(flags[4] + 1) % 2], &(tab[flags[4]]));
+		}
+		if (is_in_str('>', tab[flags[4]]) == 0)
+		{
+			if (tab[flags[4] + 1])
+				tab[flags[4]] = add_str(tab[flags[4]], tempfileout[flags[4] % 2]);
+			else
+				tab[flags[4]] = add_str(tab[flags[4]], "> /dev/stdout");
+		}
+		flags[4] += 1;
+	}
+	flags[4] = 1;
+	str = ft_strdup(tab[0]);
+	free(tab[0]);
+	while (tab[flags[4]] != NULL)
+	{
+		str = add_str(str, "|");
+		str = add_str(str, tab[flags[4]]);
+		free(tab[flags[4]]);
+		flags[4] += 1;
+	}
+	flags[4] = 0;
+	while (++(flags[4]) < 4)
+		flags[flags[4]] = 0;
+	lst = create_stack_1(str);
+	t_lst[0] = create_stack3(lst);
+	t_lst[0] = change_lst(&(t_lst[0]));
+	t_lst[1] = interpret_quotes(t_lst[0], *flag, *env);
+	ft_lstclear(&(t_lst[0]), &ft_del);
+	nlstclear(&lst);
+	ft_putendl_fd(str, 2);
+	free(tab);
+	free(str);
+	t_lst[0] = t_lst[1];
+	apply_flags(t_lst[0], flags);
+	t_lst[0] = t_lst[1];
+	apply_flags(t_lst[0], flags);
+	cmds = create_args(t_lst[1], *env);
+	*flag = simulpipe(&cmds, env);
+	/*pid = fork();
 	if (pid == -1)
 		return ;
 	if (pid == 0)
-	{
-		flags[4] = 0;
-		tab = ft_split(str, '|');
-		while (tab[flags[4]] != NULL)
-		{
-			if (tab[flags[4]][0] != '<')
-			{
-				if (flags[4] == 0)
-					tab[flags[4]] = add_str2("< /dev/stdin ", &(tab[flags[4]]));
-				else
-					tab[flags[4]] = add_str2(tempfilein[(flags[4] + 1) % 2], &(tab[flags[4]]));
-			}
-			if (is_in_str('>', tab[flags[4]]) == 0)
-			{
-				if (tab[flags[4] + 1])
-					tab[flags[4]] = add_str(tab[flags[4]], tempfileout[flags[4] % 2]);
-				else
-					tab[flags[4]] = add_str(tab[flags[4]], "> /dev/stdout");
-			}
-			flags[4] += 1;
-		}
-		flags[4] = 1;
-		str = ft_strdup(tab[0]);
-		free(tab[0]);
-		while (tab[flags[4]] != NULL)
-		{
-			str = add_str(str, "|");
-			str = add_str(str, tab[flags[4]]);
-			free(tab[flags[4]]);
-			flags[4] += 1;
-		}
-		flags[4] = 0;
-		while (++(flags[4]) < 4)
-			flags[flags[4]] = 0;
-		lst = create_stack_1(str);
-		t_lst[0] = create_stack3(lst);
-		t_lst[0] = change_lst(&(t_lst[0]));
-		t_lst[1] = interpret_quotes(t_lst[0], *flag, env);
-		ft_lstclear(&(t_lst[0]), &ft_del);
-		/*while (t_lst[1])
-		{
-			ft_putendl_fd(t_lst[1]->content, 2);
-			t_lst[1] = t_lst[1]->next;
-		}
-		exit(6);*/
-		nlstclear(&lst);
-		ft_putendl_fd(str, 2);
-		free(tab);
-		free(str);
-
 		main3(t_lst, flags, env);
-	}
 	else
 	{
-		/*char cdw[1024];
-		getcwd(cdw, 1024);
-		printf("---------------------------------------\n");
-		printf("CWD: %s\n", cdw);
-		printf("---------------------------------------\n");
-		while(env)
-		{
-			printf("%s=%s\n", env->key, env->value);
-			env = env->next;
-		}
-		printf("---------------------------------------\n");*/
 		waitpid(pid, &(flags[5]), 0);
 		*flag = WEXITSTATUS(flags[5]);
-	}
+	}*/
 }
 
 int	main(int c, char **v, char **env)
@@ -1386,10 +1512,10 @@ int	main(int c, char **v, char **env)
 	char	*s[2];
 	char	cwd[1024];
 
-	fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
-	close(fd);
+	//fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	//close(fd);
 	my_env = generate_env(env);
-	put_env(my_env, "/tmp/env.env");
+	//put_env(my_env, "/tmp/env.env");
 	/*fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
 	while (my_env)
 	{
@@ -1402,9 +1528,9 @@ int	main(int c, char **v, char **env)
 		my_env = my_env->next;
 	}
 	close(fd);*/
-	fd = open("env.env", O_RDWR);
-	my_env = read_env(fd);
-	close(fd);
+	//fd = open("/tmp/env.env", O_RDWR);
+	//my_env = read_env(fd);
+	//close(fd);
 	//exit(5);
 	/*my_env = change_env(ft_strdup("CHANGED"), my_env, "PWD");
 	char **nenv = convert_array(my_env);
@@ -1435,19 +1561,12 @@ int	main(int c, char **v, char **env)
 			continue ; 
 		else
 		{
-			t_cmd	cmd;
-			cmd.path = "cd";
-			cmd.args = ft_calloc(3, sizeof(char *));
-			cmd.args[0] = "cd";
-			cmd.args[1] = ft_getenv("PWD", my_env);
-			cmd.args[2] = NULL;
-			bltin_cd(cmd, my_env);
-			main2(str, my_env, &flag, fd);
+			main2(str, &my_env, &flag, fd);
 			unlink("/tmp/tempfile");
 			unlink("/tmp/tempfile2");
 			free(str);
-			fd = open("/tmp/env.env", O_RDWR);
-			t_env *ne = read_env(fd);
+			//fd = open("/tmp/env.env", O_RDWR);
+			t_env *ne = my_env;
 			env = convert_array(ne);
 			while (ne)
 			{
@@ -1455,11 +1574,11 @@ int	main(int c, char **v, char **env)
 					printf("%s=%s\n", ne->key, ne->value);
 				ne = ne->next;
 			}
-			close(fd);
-			fd = open("/tmp/env.env", O_RDWR);
-			my_env = read_env(fd);
-			if (fd != -1)
-				close(fd);
+			//close(fd);
+			//fd = open("/tmp/env.env", O_RDWR);
+			//my_env = read_env(fd);
+			//if (fd != -1)
+			//	close(fd);
 		}
 	}
 	return (1);
