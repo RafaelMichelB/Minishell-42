@@ -12,31 +12,23 @@
 char	*ft_getenv(char *s, t_env *env);
 void    add_env_line(t_env **env, t_env *node);
 t_env   *init_env_line(char *key, char *value);
+char	*add_str(char *str, char *s2);
 
-t_env	*read_env(int fd)
+char **ft_split1(char *str, char c)
 {
-	t_env	*env;
 	char	**split;
-	char	*str;
+	int		i;
 
-	env = NULL;
-	str = get_next_line(fd);
-	while (str)
+	split = ft_split(str, c);
+	i = 2;
+	while (split[i])
 	{
-		split = ft_split(str, '=');
-		if (split[1])
-			add_env_line(&env, init_env_line(ft_strtrim(split[0], "\n"), ft_strtrim(split[1], "\n")));
-		else
-			add_env_line(&env, init_env_line(ft_strtrim(split[0], "\n"), NULL));
-		free(split);
-		str = get_next_line(fd);
+		split[1] = add_str(split[1], split[i]);
+		free(split[i]);
+		split[i] = NULL;
+		i++;
 	}
-	/*while (env)
-	{
-		printf("%s=%s\n", env->key, env->value);
-		env = env->next;
-	}*/
-	return (env);
+	return (split);
 }
 
 void	put_env(t_env *my_env, char *file)
@@ -165,12 +157,12 @@ t_env	*generate_env(char **env)
 	while (env[i])
 	{
 		//printf("%s\n", env[i]);
-		split = ft_split(env[i], '='); //Change to split only on the first =
+		split = ft_split1(env[i], '='); //Change to split only on the first =
 		//printf("%s\n%s\n", split[0], split[1]);
 		if (split[1])
 			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), ft_strdup(split[1])));
 		else
-			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), NULL));
+			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), ft_strdup("")));
 		i++;
 		ft_free(split);
 	}
@@ -195,13 +187,13 @@ char	*ft_strtrim2(char const *s1, char const *set)
 	return (ptr);
 }
 
-/****************************************************/
-/*													*/
-/*			   is_is_str() doc:						*/
-/*	  This function compare a character				*/
-/*  with a string to find if it is in the string	*/
-/*													*/
-/****************************************************/
+/********************************************************/
+/*														*/
+/*				is_is_str() doc:						*/
+/*		This function compare a character				*/
+/*	with a string to find if it is in the string		*/
+/*														*/
+/********************************************************/
 
 int	is_in_str(char c, char *str)
 {
@@ -769,7 +761,12 @@ void	ca22(t_list **l, int *i, t_cmd **cmd_array)
 
 int	detect_builtin(char *str)
 {
-	if (ft_strncmp("cd", str, 2147483647) == 0 || ft_strncmp("echo", str, 2147483647) == 0)
+	if (ft_strncmp("cd", str, 2147483647) == 0 || \
+	ft_strncmp("echo", str, 2147483647) == 0 || \
+	ft_strncmp("pwd", str, 2147483647) == 0 ||\
+	ft_strncmp("unset", str, 2147483647) == 0 ||\
+	ft_strncmp("export", str, 2147483647) == 0 ||\
+	ft_strncmp("env", str, 2147483647) == 0)
 		return (0);
 	return (1);
 }
@@ -1229,7 +1226,6 @@ int	builtin_echo_prep(t_cmd *cmd, t_env **env)
 	fd[0] = open("/dev/stdout", O_WRONLY);
 	while (cmd[i].type == RED_IN)
 	{
-		ft_putendl_fd("LLL", 2);
 		if (fd[0] == -1)
 		{
 			ft_putstr_fd("bash: ", 2);
@@ -1250,24 +1246,328 @@ int	builtin_echo_prep(t_cmd *cmd, t_env **env)
 		return (1);
 	}
 	j = i;
-	ft_putendl_fd(ft_itoa(j), 2);
 	i++;
-	ft_putendl_fd(ft_itoa(j), 2);
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
-	ft_putendl_fd(ft_itoa(j), 2);
 	while (cmd[i].type != END)
-	{
-		ft_putendl_fd(ft_itoa(j), 2);
 		do1cmd2(fd, &i, cmd);
-	}
-	ft_putendl_fd(ft_itoa(j), 2);
-	if (count_size_args(cmd[j].args) <= 1)
+	if (count_size_args(cmd[j].args) == 1)
 	{
-		ft_putstr_fd("need more args\n", 2);
-		return (1);
+		ft_putstr_fd("\n", fd[1]);
+		return (0);
 	}
 	bltin_echo(cmd[j], fd[1]);
+	close(fd[1]);
+	close(fd[0]);
 	return (0);
+}
+
+int	bltin_pwd(int fd)
+{
+	size_t	size;
+	char	*buffer;
+
+	size = 1024;
+	buffer = calloc(size, sizeof(char *));
+	if (!buffer)
+		return (1);
+	while (getcwd(buffer, size) == NULL)
+	{
+		if (errno == ERANGE)
+		{
+			size *= 2;
+			free(buffer);
+			buffer = calloc(size, sizeof(char *));
+			if (!buffer)
+				return (1);
+		}
+		else
+		{
+			free(buffer);
+			return (1);
+		}
+	}
+	ft_putendl_fd(buffer, fd);
+	free(buffer);
+	return (0);
+}
+
+int	builtin_pwd_prep(t_cmd *cmd, t_env **env)
+{
+	int	i;
+	int	j;
+	int	k;
+	int	fd[2];
+
+	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
+	while (cmd[i].type == RED_IN)
+	{
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			return (1);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (1);
+	}
+	j = i;
+	i++;
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmd[i].type != END)
+		do1cmd2(fd, &i, cmd);
+	if (count_size_args(cmd[j].args) > 1)
+	{
+		ft_putstr_fd("Too many args\n", 2);
+		return (0);
+	}
+	k = bltin_pwd(fd[1]);
+	close(fd[1]);
+	close(fd[0]);
+	return (k);
+}
+
+int	bltin_unset(t_cmd cmd, t_env **env)
+{
+	int		i;
+	t_env	*cp;
+	t_env	*to_clear;
+
+	i = 1;
+	while (cmd.args[i])
+	{
+		cp = *env;
+		while (cp)
+		{
+			if (cp->next && ft_strncmp(cp->next->key, cmd.args[i], 2147483647) == 0)
+			{
+				to_clear = cp->next;
+				cp->next = cp->next->next;
+				free(to_clear->key);
+				free(to_clear->value);
+				free(to_clear);
+			}
+			else if (cp->next == NULL && ft_strncmp(cp->key, cmd.args[i], 2147483647) == 0)
+			{
+				free(cp->key);
+				free(cp->value);
+				free(cp);
+				cp = NULL;
+			}
+			cp = cp->next;
+		}
+		i++;
+	}
+	return (0);
+}
+
+int	builtin_unset_prep(t_cmd *cmd, t_env **env)
+{
+	int	i;
+	int	j;
+	int	k;
+	int	fd[2];
+
+	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
+	while (cmd[i].type == RED_IN)
+	{
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			return (1);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (1);
+	}
+	j = i;
+	i++;
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmd[i].type != END)
+		do1cmd2(fd, &i, cmd);
+	k = bltin_unset(cmd[j], env);
+	close(fd[1]);
+	close(fd[0]);
+	return (k);
+}
+
+int	bltin_env(t_env *env, int fd)
+{
+	while (env)
+	{
+		if (ft_strncmp(env->key, "_", 1) == 0)
+			ft_putstr_fd("_=/usr/bin/env\n", fd);
+		else if (env->value)
+		{
+			ft_putstr_fd(env->key, fd);
+			ft_putstr_fd("=", fd);
+			ft_putendl_fd(env->value, fd);
+		}
+		env = env->next;
+	}
+	return (0);
+}
+
+int	builtin_env_prep(t_cmd *cmd, t_env **env)
+{
+	int	i;
+	int	j;
+	int	k;
+	int	fd[2];
+
+	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
+	while (cmd[i].type == RED_IN)
+	{
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			return (1);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (1);
+	}
+	j = i;
+	i++;
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmd[i].type != END)
+		do1cmd2(fd, &i, cmd);
+	if (count_size_args(cmd[j].args) > 1)
+	{
+		ft_putstr_fd("Too many args\n", 2);
+		return (0);
+	}
+	k = bltin_env(*env, fd[1]);
+	close(fd[1]);
+	close(fd[0]);
+	return (k);
+}
+
+void	bltin_export2(t_cmd cmd, t_env **env, int fd, int size)
+{
+	int		n;
+	char	**split;
+
+	n = 1;
+	while (n < size)
+	{
+		if (is_in_str('=', cmd.args[n]))
+		{
+			split = ft_split1(cmd.args[n], '='); //CHANGER POUR SPLIT LE 1ER =
+			if (split[1])
+				add_env_line(env, init_env_line(ft_strdup(split[0]), ft_strdup(split[1])));
+			else
+				add_env_line(env, init_env_line(ft_strdup(split[0]), ft_strdup("")));
+			ft_free(split);
+		}
+		else
+			add_env_line(env, init_env_line(ft_strdup(cmd.args[n]), NULL));
+		n++;
+	}
+}
+int	bltin_export(t_cmd cmd, t_env **env, int fd)
+{
+	int		size[2];
+	t_env	*cp;
+
+	size[0] = count_size_args(cmd.args);
+	cp = *env;
+	if (size[0] == 1)
+	{
+		while (cp)
+		{
+			ft_putstr_fd("declare -x ", fd);
+			ft_putstr_fd(cp->key, fd);
+			if (cp->value)
+			{
+				ft_putstr_fd("=\"", fd);
+				if (ft_strncmp(cp->key, "_", 1) == 0)
+					ft_putstr_fd("/usr/bin/env", fd);
+				else
+					ft_putstr_fd(cp->value, fd);
+				ft_putstr_fd("\"\n", fd);
+			}
+			else
+				ft_putstr_fd("\n", fd);
+			cp = cp->next;
+		}
+	}
+	else 
+		bltin_export2(cmd, env, fd, size[0]);
+	return (0);
+}
+
+int	builtin_export_prep(t_cmd *cmd, t_env **env)
+{
+	int	i;
+	int	j;
+	int	k;
+	int	fd[2];
+
+	i = 0;
+	fd[0] = open("/dev/stdout", O_WRONLY);
+	while (cmd[i].type == RED_IN)
+	{
+		if (fd[0] == -1)
+		{
+			ft_putstr_fd("bash: ", 2);
+			ft_putstr_fd(cmd[i - 1].path, 2);
+			ft_putendl_fd(": No such file or directory", 2);
+			return (1);
+		}
+		if (fd[0] != -1)
+			close(fd[0]);
+		fd[0] = open(cmd[i].path, O_RDONLY);
+		i++;
+	}
+	if (fd[0] == -1)
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmd[i - 1].path, 2);
+		ft_putendl_fd(": No such file or directory", 2);
+		return (1);
+	}
+	j = i;
+	i++;
+	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
+	while (cmd[i].type != END)
+		do1cmd2(fd, &i, cmd);
+	k = bltin_export(cmd[j], env, fd[1]);
+	close(fd[1]);
+	close(fd[0]);
+	return (k);
 }
 
 int	simulpipe(t_cmd **cmd, t_env **env)
@@ -1294,6 +1594,14 @@ int	simulpipe(t_cmd **cmd, t_env **env)
 				status = builtin_cd_prep(type, env);
 			else if (ft_strncmp(type[tab[3]].path, "echo", 2147483647) == 0)
 				status = builtin_echo_prep(type, env);
+			else if (ft_strncmp(type[tab[3]].path, "pwd", 2147483647) == 0)
+				status = builtin_pwd_prep(type, env);
+			else if (ft_strncmp(type[tab[3]].path, "unset", 2147483647) == 0)
+				status = builtin_unset_prep(type, env);
+			else if (ft_strncmp(type[tab[3]].path, "env", 2147483647) == 0)
+				status = builtin_env_prep(type, env);
+			else if (ft_strncmp(type[tab[3]].path, "export", 2147483647) == 0)
+				status = builtin_export_prep(type, env);
 			free(type);
 		}
 		else
