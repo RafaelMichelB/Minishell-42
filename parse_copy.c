@@ -937,17 +937,23 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 
 void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
 {
-	if (((char *)((*l)->next->next->content))[0] == ' ' || (((char *)((*l)->next->next->content))[0] == '>' && (*l)->next->next->next))
-	{
-		free((*cmd_array)[*i + *j].path);
-		(*cmd_array)[*i + *j].path = ft_strtrim2((*l)->next->next->content, " ");
-	}
-	else
-		(*cmd_array)[*i + *j].path = ft_substr((*l)->next->next->content, 0, ft_strlen((*l)->next->next->content));
+	free((*cmd_array)[*i + *j].path);
+	(*cmd_array)[*i + *j].path = ft_strtrim2((*l)->next->next->content, " ");
+	ft_putstr_fd("str :-> ", 2);
+	ft_putstr_fd((*cmd_array)[*i + *j].path, 2);
+	ft_putstr_fd("\n\n", 2);
 }
 
 int	ca3(t_list **l, int tab[], t_cmd **cmd_array)
 {
+	t_list *cp = *l;
+
+	ft_putendl_fd("---------------", 2);
+	while (cp)
+	{
+		ft_putendl_fd((cp)->content, 2);
+		cp = (cp)->next;
+	}
 	ca32(l, &(tab[0]), cmd_array, &(tab[1]));
 	(*cmd_array)[tab[0] + tab[1]].args = NULL;
 	if ((*cmd_array)[tab[0] + tab[1]].type != RED_APP)
@@ -979,7 +985,7 @@ t_cmd	*create_args(t_list *l, t_env *env)
 
 	tab[0] = 0;
 	tab[1] = 2;
-	cmd_array = ft_calloc(ft_lstsize(l) - 1, sizeof(t_cmd));
+	cmd_array = ft_calloc(ft_lstsize(l), sizeof(t_cmd));
 	//ft_putendl_fd(ft_itoa(sizeof(cmd_array) * ft_lstsize(l) - 1), 2);
 	//if (((char *)(l->content))[0] == '<')
 	//	l = l->next;
@@ -1196,26 +1202,26 @@ int	bltin_cd(t_cmd cmd, t_env *env)
 
 t_env	*change_env(char *s, t_env **env, char *s2)
 {
-	t_env	**cp;
+	t_env	*cp;
 	t_env	*cpy;
 
-	cp = env;
+	cp = *env;
 	cpy = NULL;
-	while (*env)
+	while (cp)
 	{
-		if (ft_strncmp((*env)->key, s2, 2147483647) == 0)
+		if (ft_strncmp((cp)->key, s2, 2147483647) == 0)
 		{
 			ft_putendl_fd("UUUUUU", 2);
-			add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), s));
+			add_env_line(&cpy, init_env_line(ft_strdup((cp)->key), s));
 		}
 		else
-			if ((*env)->value)
-				add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), ft_strdup((*env)->value)));
+			if ((cp)->value)
+				add_env_line(&cpy, init_env_line(ft_strdup((cp)->key), ft_strdup((cp)->value)));
 			else
-				add_env_line(&cpy, init_env_line(ft_strdup((*env)->key), NULL));
-		*env = (*env)->next;
+				add_env_line(&cpy, init_env_line(ft_strdup((cp)->key), NULL));
+		cp = (cp)->next;
 	}
-	env_clear(cp);
+	env_clear(env);
 	return (cpy);
 }
 
@@ -1941,9 +1947,8 @@ int	main(int c, char **v, char **env)
 	char	*s[2];
 	char	cwd[1024];
 
-	//fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
-	//close(fd);
 	my_env = generate_env(env);
+	my_env = change_env(ft_itoa(ft_atoi(ft_getenv("SHLVL", my_env)) + 1), &my_env, "SHLVL");
 	flag = 0;
 	while (1)
 	{
