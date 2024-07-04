@@ -979,7 +979,8 @@ t_cmd	*create_args(t_list *l, t_env *env)
 
 	tab[0] = 0;
 	tab[1] = 2;
-	cmd_array = ft_calloc(ft_lstsize(l), sizeof(t_cmd));
+	cmd_array = ft_calloc(ft_lstsize(l) - 1, sizeof(t_cmd));
+	//ft_putendl_fd(ft_itoa(sizeof(cmd_array) * ft_lstsize(l) - 1), 2);
 	//if (((char *)(l->content))[0] == '<')
 	//	l = l->next;
 	while (l)
@@ -1036,7 +1037,24 @@ void	do1cmd2(int fd[], int *i, t_cmd *cmds)
 	(*i)++;
 }
 
-int	do1cmd(t_cmd *cmds, int flag, char **env)
+void	clear_cmds(t_cmd *cmds)
+{
+	int	j;
+
+	j = 0;
+	while (cmds[j].type != END)
+	{
+		free(cmds[j].path);
+		if (cmds[j].args)
+		{
+			ft_putendl_fd(cmds[j].args[0], 2);
+			ft_free(cmds[j].args);
+		}
+		j++;
+	}
+	free(cmds);
+}
+int	do1cmd(t_cmd *cmds, int flag, char **env, t_cmd *cmd)
 {
 	int		fd[2];
 	int		i;
@@ -1072,28 +1090,25 @@ int	do1cmd(t_cmd *cmds, int flag, char **env)
 		ft_putendl_fd(": command not found", 2);
 		exit(127);
 	}
-	ft_putendl_fd("AC", 2);
+	if (access(cmds[j].path, F_OK) != 0)
+		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[j].path, 2), ft_putendl_fd(": No such file or directory", 2), free(cmds), clear_cmds(cmd), ft_free(env), exit(127), 0);
 	if (fd[0] == -1)
-		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 2].path, 2), ft_putendl_fd(": No such file or directory", 2), exit(1), 0);
-	ft_putendl_fd("AD", 2);
+		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 2].path, 2), ft_putendl_fd(": No such file or directory", 2), exit(127), 0);
 	dup2(fd[0], 0);
-	ft_putendl_fd("AE", 2);
 	close(fd[0]);
-	ft_putendl_fd("AF", 2);
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
-	ft_putendl_fd("AG", 2);
 	while (cmds[i].type != END)
 		do1cmd2(fd, &i, cmds);
-	ft_putendl_fd("AH", 2);
 	if (fd[1] == -1)
-		return (ft_putendl_fd("Error", 2), exit(1), 0);
-	ft_putendl_fd("AI", 2);
+		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 1].path, 2), ft_putendl_fd(": No such file or directory", 2), exit(127), 0);
 	dup2(fd[1], 1);
-	ft_putendl_fd("AJ", 2);
 	close(fd[1]);
-	ft_putendl_fd("AK", 2);
 	if (execve(cmds[j].path, cmds[j].args, env))
-		ft_putendl_fd("...", 2);
+	{
+		ft_putstr_fd("bash: ", 2);
+		ft_putstr_fd(cmds[j].path, 2);
+		ft_putstr_fd(": Is a directory\n", 2);
+	}
 	ft_putendl_fd("AL", 2);
 	exit(1);
 }
@@ -1135,7 +1150,7 @@ char	*ft_getenv(char *s, t_env *env)
 			return (env->value);
 		env = env->next;
 	}
-	return (NULL);
+	return ("");
 }
 
 int	count_size_args(char **arg)
@@ -1601,6 +1616,7 @@ void	bltin_export2(t_cmd cmd, t_env **env, int fd, int size)
 		n++;
 	}
 }
+
 int	bltin_export(t_cmd cmd, t_env **env, int fd)
 {
 	int		size[2];
@@ -1677,7 +1693,7 @@ int	builtin_export_prep(t_cmd *cmd, t_env **env)
 	return (k);
 }
 
-int	simulpipe(t_cmd **cmd, t_env **env)
+int	simulpipe(t_cmd *cmd, t_env **env)
 {
 	int status;
 	int tab[5];
@@ -1686,11 +1702,11 @@ int	simulpipe(t_cmd **cmd, t_env **env)
 	char	**nenv;
 
 	tab[0] = 0;
-	while ((*cmd)[tab[0]].type != END)
+	while ((cmd)[tab[0]].type != END)
 	{
 		tab[2] = tab[0];
 		tab[1] = 0;
-		simulpipe2(tab, *cmd, &type);
+		simulpipe2(tab, cmd, &type);
 		tab[3] = 0;
 		while (type[tab[3]].type == RED_IN)
 			tab[3]++;
@@ -1717,7 +1733,10 @@ int	simulpipe(t_cmd **cmd, t_env **env)
 			nenv = convert_array(*env);
 			pid = fork();
 			if (pid == 0)
-				do1cmd(type, 0, nenv);
+			{
+				env_clear(env);
+				do1cmd(type, 0, nenv, cmd);
+			}
 			else
 			{
 				waitpid(pid, &status, 0);
@@ -1727,15 +1746,19 @@ int	simulpipe(t_cmd **cmd, t_env **env)
 		}
 	}
 	tab[0] = 0;
-	while ((*cmd)[tab[0]].type != END)
+	ft_putendl_fd("---___---", 2);
+	while (cmd[tab[0]].type != END)
 	{
-		//ft_putendl_fd(":::::", 2);
-		free((*cmd)[tab[0]].path);
-		if ((*cmd)[tab[0]].args)
-			ft_free((*cmd)[tab[0]].args);
+		free(cmd[tab[0]].path);
+		if (cmd[tab[0]].args)
+		{
+			ft_putendl_fd(cmd[tab[0]].args[0], 2);
+			ft_free(cmd[tab[0]].args);
+		}
 		(tab[0])++;
 	}
-	free(*cmd);
+	free(cmd);
+	ft_putendl_fd("___---___", 2);
 	if (tab[4] == 1)
 		return (status);
 	else
@@ -1906,7 +1929,7 @@ void	main2(char *str, t_env **env, int *flag, int fd)
 	apply_flags(t_lst[0], flags);
 	cmds = create_args(t_lst[1], *env);
 	ft_lstclear(&(t_lst[1]), &ft_del);
-	*flag = simulpipe(&cmds, env);
+	*flag = simulpipe(cmds, env);
 }
 
 int	main(int c, char **v, char **env)
@@ -1921,36 +1944,7 @@ int	main(int c, char **v, char **env)
 	//fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
 	//close(fd);
 	my_env = generate_env(env);
-	//put_env(my_env, "/tmp/env.env");
-	/*fd = open("/tmp/env.env", O_RDWR | O_CREAT | O_TRUNC, 0644);
-	while (my_env)
-	{
-		ft_putstr_fd(my_env->key, fd);
-		ft_putstr_fd("=", fd);
-		if (my_env->value)
-			ft_putendl_fd(my_env->value, fd);
-		else
-			ft_putstr_fd("\n", fd);
-		my_env = my_env->next;
-	}
-	close(fd);*/
-	//fd = open("/tmp/env.env", O_RDWR);
-	//my_env = read_env(fd);
-	//close(fd);
-	//exit(5);
-	/*my_env = change_env(ft_strdup("CHANGED"), my_env, "PWD");
-	char **nenv = convert_array(my_env);
-	flag = -1;
-	while (nenv[++flag])
-		printf("%s\n", nenv[flag]);
-	exit(6);
-	while (my_env)
-	{
-		printf("%s=%s\n", my_env->key, my_env->value);
-		my_env = my_env->next;
-	}
-	exit(6);*/
-	flag = -1;
+	flag = 0;
 	while (1)
 	{
 		str = readline(">> ");
@@ -1972,12 +1966,6 @@ int	main(int c, char **v, char **env)
 			unlink("/tmp/tempfile");
 			unlink("/tmp/tempfile2");
 			free(str);
-			//fd = open("/tmp/env.env", O_RDWR);
-			//close(fd);
-			//fd = open("/tmp/env.env", O_RDWR);
-			//my_env = read_env(fd);
-			//if (fd != -1)
-			//	close(fd);
 		}
 	}
 	return (1);
