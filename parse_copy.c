@@ -938,40 +938,29 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j)
 {
 	free((*cmd_array)[*i + *j].path);
-	(*cmd_array)[*i + *j].path = ft_strtrim2((*l)->next->next->content, " ");
-	ft_putstr_fd("str :-> ", 2);
-	ft_putstr_fd((*cmd_array)[*i + *j].path, 2);
-	ft_putstr_fd("\n\n", 2);
+	(*cmd_array)[*i + *j].path = ft_strtrim2((*l)->content, " ");
 }
 
 int	ca3(t_list **l, int tab[], t_cmd **cmd_array)
 {
-	t_list *cp = *l;
-
-	ft_putendl_fd("---------------", 2);
-	while (cp)
-	{
-		ft_putendl_fd((cp)->content, 2);
-		cp = (cp)->next;
-	}
-	ca32(l, &(tab[0]), cmd_array, &(tab[1]));
-	(*cmd_array)[tab[0] + tab[1]].args = NULL;
-	if ((*cmd_array)[tab[0] + tab[1]].type != RED_APP)
-		(*cmd_array)[tab[0] + tab[1]].type = RED_OUT;
-	if (((char *)((*l)->content))[0] != '>')
-		(*l) = (*l)->next;
-	if ((*l) && ((char *)((*l)->content))[0] != '|' && ((char *)((*l)->content))[0] != '>')
-		(*l) = (*l)->next;
-	if ((*l) && ((char *)((*l)->content))[0] != '|' && ((char *)((*l)->content))[0] == '>')
-		(*l) = (*l)->next;
+	int	f = 0;
+	while (((char *)((*l)->content))[0] != '>')
+		*l = (*l)->next;
 	if ((*l) && ((char *)((*l)->content))[0] == '>' && (*l)->next)
 	{
-		while (((char *)((*l)->content))[0] != '>')
+		if (((char *)((*l)->content))[0] == '>')
 			(*l) = (*l)->next;
-		if (ft_strlen((*cmd_array)[tab[0] + tab[1]].path) != 0)
-			(*cmd_array)[tab[0] + tab[1] + 1].type = RED_APP;
-		else
+		if (((char *)((*l)->content))[0] == '>')
+		{
+			f = 1;
+			(*l) = (*l)->next;
+		}
+		ca32(l, &(tab[0]), cmd_array, &(tab[1]));
+		(*cmd_array)[tab[0] + tab[1]].args = NULL;
+		if (f == 1)
 			(*cmd_array)[tab[0] + tab[1]].type = RED_APP;
+		else
+			(*cmd_array)[tab[0] + tab[1]].type = RED_OUT;
 	}
 	if (ft_strlen((*cmd_array)[tab[0] + tab[1]].path) != 0)
 		(tab[1])++;
@@ -985,7 +974,7 @@ t_cmd	*create_args(t_list *l, t_env *env)
 
 	tab[0] = 0;
 	tab[1] = 2;
-	cmd_array = ft_calloc(ft_lstsize(l), sizeof(t_cmd));
+	cmd_array = ft_calloc(ft_lstsize(l) - 1, sizeof(t_cmd));
 	//ft_putendl_fd(ft_itoa(sizeof(cmd_array) * ft_lstsize(l) - 1), 2);
 	//if (((char *)(l->content))[0] == '<')
 	//	l = l->next;
