@@ -9,6 +9,7 @@
 #include <readline/history.h>
 #include <termios.h>
 
+int	bltin_unset(t_cmd cmd, t_env **env);
 char	*ft_getenv(char *s, t_env *env);
 void    add_env_line(t_env **env, t_env *node);
 t_env   *init_env_line(char *key, char *value);
@@ -23,6 +24,7 @@ char **ft_split1(char *str, char c)
 	i = 2;
 	while (split[i])
 	{
+		split[1] = add_str(split[1], "=");
 		split[1] = add_str(split[1], split[i]);
 		free(split[i]);
 		split[i] = NULL;
@@ -84,7 +86,10 @@ char	**convert_array(t_env *env)
 	size = 0;
 	while (env)
 	{
-		nenv[size] = ft_strjoin3elem(env->key, "=", env->value);
+		if (env->value)
+			nenv[size] = ft_strjoin3elem(env->key, "=", env->value);
+		else
+			nenv[size] = ft_strdup(env->key);
 		size++;
 		env = env->next;
 	}
@@ -169,6 +174,42 @@ t_env	*generate_env(char **env)
 	return (my_env);
 }
 
+t_env	*generate_env2(char **env)
+{
+	char	**split;
+	t_env	*my_env;
+	int	i;
+
+	i = 0;
+	my_env = NULL;
+	while (env[i])
+	{
+		//printf("%s\n", env[i]);
+		split = ft_split1(env[i], '='); //Change to split only on the first =
+		//printf("%s\n%s\n", split[0], split[1]);
+		if (split[1])
+			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), ft_strdup(split[1])));
+		else
+			add_env_line(&my_env, init_env_line(ft_strdup(split[0]), NULL));
+		i++;
+		ft_free(split);
+	}
+	return (my_env);
+}
+
+int	envsize(t_env *env)
+{
+	int s;
+
+	s = 0;
+	while (env)
+	{
+		s++;
+		env = env->next;
+	}
+	return (s);
+}
+
 char	*ft_strtrim2(char const *s1, char const *set)
 {
 	size_t	start;
@@ -187,6 +228,65 @@ char	*ft_strtrim2(char const *s1, char const *set)
 	return (ptr);
 }
 
+int	abs(int i)
+{
+	if (i < 0)
+		i *= (-1);
+	return (i);
+}
+
+int	in_env(t_env *env, char *s)
+{
+	while (env)
+	{
+		if (ft_strncmp(env->key, s, 2147483647) == 0)
+			return (1);
+		env = env->next;
+	}
+	return (0);
+}
+
+int	ft_mystrncmp(const char *s1, const char *s2, size_t n)
+{
+	size_t	i;
+
+	i = 0;
+	if (n == 0)
+		return (0);
+	while ((s1[i] && s2[i] != '\0') && (s1[i] == s2[i]) && (i < n - 1))
+		i++;
+	return (((unsigned char)s1[i] - (unsigned char)s2[i]) + (i + 1));
+}
+
+t_env	*order_env(t_env *env)
+{
+	t_env	*ret;
+	char	**array;
+	char	*tmp;
+	int		i;
+	int		j;
+
+	array = convert_array(env);
+	i = 0;
+	while (array[i + 1] != NULL)
+	{
+		j = 0;
+		while (array[j + 1] != NULL)
+		{
+			if (ft_strncmp(array[j], array[j + 1], 2147483647) > 0)
+			{
+				tmp = array[j];
+				array[j] = array[j + 1];
+				array[j + 1] = tmp;
+			}
+			j++;
+		}
+		i++;
+	}
+	ret = generate_env2(array);
+	ft_free(array);
+	return (ret);
+}
 /********************************************************/
 /*														*/
 /*				is_is_str() doc:						*/
@@ -775,6 +875,7 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 {
 	int	flag;
 	char	**nenv;
+	char	*s;
 
 	flag = 0;
 	while (((char *)((*l)->content))[0] == '<')
@@ -798,14 +899,17 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 		if (is_in_str('/', (*l)->content) == 0)
 		{
 			ft_putendl_fd((*l)->content, 2);
-			if (detect_builtin(ft_strtrim2((*l)->content, " ")) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
+			s = ft_strtrim2((*l)->content, " ");
+			if (detect_builtin(s) == 0) // NEED TO CHANGE TO DETECT_BUILTIN()
 			{
+				free(s);
 				flag = 1;
 				ft_putendl_fd("OOOOO", 2);
 				(*cmd_array)[*i + 1].path = ft_strdup((*l)->content);
 			}
 			else
 			{
+				free(s);
 				nenv = convert_array(env);
 				(*cmd_array)[*i + 1].path = find_nice_path((*l)->content, nenv);
 				ft_free(nenv);
@@ -1489,7 +1593,7 @@ void	bltin_export2(t_cmd cmd, t_env **env, int fd, int size)
 			if (split[1])
 				add_env_line(env, init_env_line(ft_strdup(split[0]), ft_strdup(split[1])));
 			else
-				add_env_line(env, init_env_line(ft_strdup(split[0]), ft_strdup("")));
+				add_env_line(env, init_env_line(ft_strdup(split[0]), NULL));
 			ft_free(split);
 		}
 		else
@@ -1501,19 +1605,21 @@ int	bltin_export(t_cmd cmd, t_env **env, int fd)
 {
 	int		size[2];
 	t_env	*cp;
+	t_env	*cpy;
 
 	size[0] = count_size_args(cmd.args);
-	cp = *env;
+	cp = order_env(*env);
+	cpy = cp;
 	if (size[0] == 1)
 	{
 		while (cp)
 		{
-			ft_putstr_fd("declare -x ", fd);
+			ft_putstr_fd("declare -x ", fd);		
 			ft_putstr_fd(cp->key, fd);
 			if (cp->value)
 			{
 				ft_putstr_fd("=\"", fd);
-				if (ft_strncmp(cp->key, "_", 1) == 0)
+				if (ft_strncmp(cp->key, "_", 2) == 0)
 					ft_putstr_fd("/usr/bin/env", fd);
 				else
 					ft_putstr_fd(cp->value, fd);
@@ -1526,6 +1632,7 @@ int	bltin_export(t_cmd cmd, t_env **env, int fd)
 	}
 	else 
 		bltin_export2(cmd, env, fd, size[0]);
+	env_clear(&cpy);
 	return (0);
 }
 
@@ -1733,13 +1840,14 @@ t_list	*change_lst(t_list **lst)
 		ft_lstlast(new_lst)->next = lstdup(tmp_lst);
 	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup(str)));
 	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup("<")));
+	ft_lstclear(&tmp_lst, &ft_del);
 	return (new_lst);
 }
 
 void	main2(char *str, t_env **env, int *flag, int fd)
 {
 	t_nlist	*lst;
-	t_list	*t_lst[2];
+	t_list	*t_lst[3];
 	int		flags[6];
 	pid_t	pid;
 	char	**tab;
@@ -1786,29 +1894,19 @@ void	main2(char *str, t_env **env, int *flag, int fd)
 		flags[flags[4]] = 0;
 	lst = create_stack_1(str);
 	t_lst[0] = create_stack3(lst);
-	t_lst[0] = change_lst(&(t_lst[0]));
-	t_lst[1] = interpret_quotes(t_lst[0], *flag, *env);
+	t_lst[2] = change_lst(&(t_lst[0]));
+	t_lst[1] = interpret_quotes(t_lst[2], *flag, *env);
 	ft_lstclear(&(t_lst[0]), &ft_del);
+	ft_lstclear(&(t_lst[2]), &ft_del);
 	nlstclear(&lst);
 	ft_putendl_fd(str, 2);
 	free(tab);
 	free(str);
 	t_lst[0] = t_lst[1];
 	apply_flags(t_lst[0], flags);
-	t_lst[0] = t_lst[1];
-	apply_flags(t_lst[0], flags);
 	cmds = create_args(t_lst[1], *env);
+	ft_lstclear(&(t_lst[1]), &ft_del);
 	*flag = simulpipe(&cmds, env);
-	/*pid = fork();
-	if (pid == -1)
-		return ;
-	if (pid == 0)
-		main3(t_lst, flags, env);
-	else
-	{
-		waitpid(pid, &(flags[5]), 0);
-		*flag = WEXITSTATUS(flags[5]);
-	}*/
 }
 
 int	main(int c, char **v, char **env)
@@ -1863,6 +1961,7 @@ int	main(int c, char **v, char **env)
 			unlink("/tmp/env.env");
 			free(str);
 			rl_clear_history();
+			env_clear(&my_env);
 			return (0);
 		}
 		if (only_in2(str, ' ', '	') == 1)
@@ -1874,14 +1973,6 @@ int	main(int c, char **v, char **env)
 			unlink("/tmp/tempfile2");
 			free(str);
 			//fd = open("/tmp/env.env", O_RDWR);
-			t_env *ne = my_env;
-			env = convert_array(ne);
-			while (ne)
-			{
-				if (strcmp(ne->key, "PWD") == 0)
-					printf("%s=%s\n", ne->key, ne->value);
-				ne = ne->next;
-			}
 			//close(fd);
 			//fd = open("/tmp/env.env", O_RDWR);
 			//my_env = read_env(fd);
