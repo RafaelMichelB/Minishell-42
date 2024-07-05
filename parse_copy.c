@@ -863,9 +863,33 @@ t_cmd	handle_hdoc(t_list **l, t_env *menv)
 		else
 			cmd.path = ft_substr((*l)->content, 0, ft_strlen((*l)->content));
 	}
-	*l = (*l)->next->next->next;
+	*l = (*l)->next;
 	ft_putendl_fd((*l)->content, 2);
 	cmd.args = gen_args(l);
+	cmd.type = HDOC;
+	ft_free(env);
+	return (cmd);
+}
+
+t_cmd	handle_hdoc2(t_list **l, t_env *menv)
+{
+	t_cmd	cmd;
+	char	**env;
+
+	env = convert_array(menv);
+	if (is_in_str('/', (*l)->content) == 0)
+		cmd.path = find_nice_path((*l)->next->next->content, env);
+	else
+	{
+		if (((char *)((*l)->content))[0] == ' ')
+			cmd.path = ft_strtrim2((*l)->next->next->content, " ");
+		else
+			cmd.path = ft_substr((*l)->next->next->content, 0, ft_strlen((*l)->next->next->content));
+	}
+	ft_putendl_fd((*l)->content, 2);
+	cmd.args = gen_args(l);
+	free(cmd.args[2]);
+	cmd.args[2] = NULL;
 	cmd.type = HDOC;
 	ft_free(env);
 	return (cmd);
@@ -917,7 +941,12 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env)
 		(*i)++;
 	}
 	(*i)--;
-	if (((char *)((*l)->next->content))[0] == '<' && ((char *)((*l)->next->next->content))[0] == '<')
+	if (((char *)((*l)->content))[0] == ';')	
+	{
+			ft_putendl_fd("HDOC Here", 2);
+			(*cmd_array)[*i + 1] = handle_hdoc2(l, env);
+	}
+	else if (((char *)((*l)->next->content))[0] == ';')	
 	{
 			ft_putendl_fd("HDOC Here", 2);
 			(*cmd_array)[*i + 1] = handle_hdoc(l, env);
@@ -1098,7 +1127,7 @@ int	do1cmd(t_cmd *cmds, int flag, char **env, t_cmd *cmd)
 	j = i;
 	i++;
 	if (cmds[i - 1].type == HDOC)
-		return (ft_putendl_fd("Need to manage HDOC", 2), exit(3), 0);
+		return (ft_putendl_fd("Need to manage HDOC", 2), free(cmds), clear_cmds(cmd), ft_free(env), close(fd[0]), exit(3), 0);
 	if (cmds[i - 1].type == NONE)
 	{
 		if (ft_strncmp(cmds[i - 1].path, "", 2147483647) == 0)
@@ -1121,14 +1150,14 @@ int	do1cmd(t_cmd *cmds, int flag, char **env, t_cmd *cmd)
 	if (access(cmds[j].path, F_OK) != 0)
 		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[j].path, 2), ft_putendl_fd(": No such file or directory", 2), free(cmds), clear_cmds(cmd), ft_free(env), exit(127), 0);
 	if (fd[0] == -1)
-		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 2].path, 2), ft_putendl_fd(": No such file or directory", 2), exit(127), 0);
+		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 2].path, 2), ft_putendl_fd(": No such file or directory", 2), free(cmds), clear_cmds(cmd), ft_free(env), exit(127), 0);
 	dup2(fd[0], 0);
 	close(fd[0]);
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmds[i].type != END)
 		do1cmd2(fd, &i, cmds);
 	if (fd[1] == -1)
-		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 1].path, 2), ft_putendl_fd(": No such file or directory", 2), exit(127), 0);
+		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i - 1].path, 2), ft_putendl_fd(": No such file or directory", 2), free(cmds), clear_cmds(cmd), ft_free(env), exit(127), 0);
 	dup2(fd[1], 1);
 	close(fd[1]);
 	if (execve(cmds[j].path, cmds[j].args, env))
@@ -1858,10 +1887,24 @@ t_list	*change_lst(t_list **lst)
 {
 	t_list	*new_lst;
 	t_list	*tmp_lst;
+	t_list	*tmp;
 	t_list	*cpy;
 	char	*str;
 
+	tmp = NULL;
 	cpy = *lst;
+	while (cpy)
+	{
+		if (((char *)cpy->content)[0] == '<' && ((char *)cpy->next->content)[0] == '<')
+		{
+			ft_lstadd_back(&tmp, ft_lstnew(ft_strdup(";")));
+			cpy = cpy->next;
+		}
+		else
+			ft_lstadd_back(&tmp, ft_lstnew(ft_strdup(cpy->content)));
+		cpy = cpy->next;
+	}
+	cpy = tmp;
 	new_lst = NULL;
 	tmp_lst = NULL;
 	str = cpy->next->content;
@@ -1894,6 +1937,7 @@ t_list	*change_lst(t_list **lst)
 	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup(str)));
 	ft_lstadd_front(&new_lst, ft_lstnew(ft_strdup("<")));
 	ft_lstclear(&tmp_lst, &ft_del);
+	ft_lstclear(&tmp, &ft_del);
 	return (new_lst);
 }
 
@@ -1914,6 +1958,7 @@ void	main2(char *str, t_env **env, int *flag, int fd)
 	close(fd);
 	flags[4] = 0;
 	tab = ft_split(str, '|');
+	tab[flags[4]] = add_str2("< /dev/stdin ", &(tab[flags[4]]));
 	while (tab[flags[4]] != NULL)
 	{
 		if (tab[flags[4]][0] != '<')
