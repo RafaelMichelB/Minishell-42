@@ -14,6 +14,7 @@ char	*ft_getenv(char *s, t_env *env);
 void    add_env_line(t_env **env, t_env *node);
 t_env   *init_env_line(char *key, char *value);
 char	*add_str(char *str, char *s2);
+int	only_in(char *str, char c);
 
 char **ft_split1(char *str, char c)
 {
@@ -600,6 +601,9 @@ void	iq4(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 
 void	iq32(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 {
+	int	f;
+
+	f = 0;
 	stacks[2] = stacks[2]->next;
 	if (stacks[2]->c == ' ' || stacks[2]->c == '"')
 	{
@@ -622,6 +626,11 @@ void	iq32(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 	}
 	else
 	{
+		if (stacks[2]->c == '\'')
+		{
+			nlstadd_back(&stacks[1], nlst_new('$'));
+			f = 1;
+		}
 		while (ft_isalnum(stacks[2]->c) || stacks[2]->c == '_')
 		{
 			nlstadd_back(&stacks[1], nlst_new(stacks[2]->c));
@@ -629,7 +638,10 @@ void	iq32(t_nlist *stacks[], char *strs[], int flag, t_env *env)
 		}
 		strs[1] = join_stack(stacks[1]);
 		nlstclear(&stacks[1]);
-		strs[0] = add_str(strs[0], ft_getenv(strs[1], env));
+		if (f == 0)
+			strs[0] = add_str(strs[0], ft_getenv(strs[1], env));
+		else
+			strs[0] = add_str(strs[0], strs[1]);
 		free(strs[1]);
 	}
 }
@@ -730,11 +742,21 @@ char	**gen_args(t_list **lst)
 	nb = 0;
 	while (((char *)(*lst)->next->content)[0] != '>')
 	{
-		if (((char *)((*lst)->content))[0] == ' ')
+		if (only_in((*lst)->content, ' '))
+		{
+			nb--;
+			(*lst) = (*lst)->next;
+		}
+		else if (((char *)((*lst)->content))[0] == ' ')
+		{
 			array[nb] = ft_strtrim2((*lst)->content, " ");
+			(*lst) = (*lst)->next;
+		}
 		else
+		{
 			array[nb] = ft_substr((*lst)->content, 0, ft_strlen((*lst)->content));
-		(*lst) = (*lst)->next;
+			(*lst) = (*lst)->next;
+		}
 		nb++;
 	}
 	if (((char *)((*lst)->content))[0] == ' ')
@@ -778,10 +800,16 @@ char	*find_nice_path(char *cmd, char **env)
 		return (NULL);
 	i = -1;
 	split_cmd = ft_split(cmd, ' ');
+	//ft_putendl_fd(split_cmd[0], 2);
+//	if (split_cmd[0] == NULL)
+//		return (ft_putendl_fd("LOLOLOLLOLOLOLO", 2), ERROR);
 	while (path[++i] != NULL)
 	{
 		poss_path1 = ft_strjoin(path[i], "/");
-		poss_path2 = ft_strjoin(poss_path1, split_cmd[0]);
+		if (split_cmd[0] == NULL)
+			poss_path2 = ft_strjoin(poss_path1, "noexist");
+		else
+			poss_path2 = ft_strjoin(poss_path1, split_cmd[0]);
 		if (access(poss_path2, F_OK) == 0)
 		{
 			ft_free(split_cmd);
@@ -975,27 +1003,20 @@ t_cmd	*create_args(t_list *l, t_env *env)
 	tab[0] = 0;
 	tab[1] = 2;
 	cmd_array = ft_calloc(ft_lstsize(l) - 1, sizeof(t_cmd));
-	//ft_putendl_fd(ft_itoa(sizeof(cmd_array) * ft_lstsize(l) - 1), 2);
-	//if (((char *)(l->content))[0] == '<')
-	//	l = l->next;
 	while (l)
 	{
 		ft_putendl_fd(l->content, 2);
 		ca2(&l, &(tab[0]), &cmd_array, env);
-		//l = l->next;
 		while (l->next && ((char *)(l->next->content))[0] != '<')
 		{
 			ft_putstr_fd("VALUE :", 2);
 			ft_putendl_fd(l->content, 2);
 			ca3(&l, tab, &cmd_array);
 		}
-		//while (l && ((char *)(l->content))[0] != '<')
-		//	l = l->next;
 		if (l)
 		{
 			ft_putstr_fd("VAL: ", 2);
 			ft_putendl_fd(((char *)(l->content)), 2);
-//			l = l->next;
 		}
 		if (l)
 			l = l->next;
@@ -1080,9 +1101,21 @@ int	do1cmd(t_cmd *cmds, int flag, char **env, t_cmd *cmd)
 		return (ft_putendl_fd("Need to manage HDOC", 2), exit(3), 0);
 	if (cmds[i - 1].type == NONE)
 	{
+		if (ft_strncmp(cmds[i - 1].path, "", 2147483647) == 0)
+		{
+			clear_cmds(cmd);
+			free(cmds);
+			ft_free(env);
+			close(fd[0]);
+			exit(0);
+		}
 		ft_putstr_fd("bash: ", 2);
 		ft_putstr_fd(cmds[i - 1].path, 2);
 		ft_putendl_fd(": command not found", 2);
+		clear_cmds(cmd);
+		free(cmds);
+		ft_free(env);
+		close(fd[0]);
 		exit(127);
 	}
 	if (access(cmds[j].path, F_OK) != 0)
@@ -1103,9 +1136,11 @@ int	do1cmd(t_cmd *cmds, int flag, char **env, t_cmd *cmd)
 		ft_putstr_fd("bash: ", 2);
 		ft_putstr_fd(cmds[j].path, 2);
 		ft_putstr_fd(": Is a directory\n", 2);
+		free(cmds);
+		clear_cmds(cmd);
+		ft_free(env);
 	}
-	ft_putendl_fd("AL", 2);
-	exit(1);
+	exit(126);
 }
 
 void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
@@ -1964,3 +1999,6 @@ int	main(int c, char **v, char **env)
 	}
 	return (1);
 }
+
+//L31
+//
