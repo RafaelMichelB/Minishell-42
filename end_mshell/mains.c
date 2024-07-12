@@ -63,7 +63,7 @@ void	main13(char ***t, int flag, char *str, t_env **my_env)
 		return ;
 	}
 	if ((*t)[1])
-		flag = ft_atoi((*t)[1]);
+		flag = ft_atoi2((*t)[1]);
 	ft_free(*t);
 	free(str);
 	rl_clear_history();

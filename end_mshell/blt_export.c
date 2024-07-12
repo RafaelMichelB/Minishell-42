@@ -1,6 +1,46 @@
 #include "parser.h"
 
-void	bltin_export2(t_cmd cmd, t_env **env, int size)
+int	a_(char *str)
+{
+	int	i;
+
+	i = -1;
+	while (str[++i] && str[i] != '=')
+	{
+		if (ft_isalnum(str[i]) == 0 && str[i] != '_')
+			return (0);
+
+	}
+	return (1);
+}
+
+int	ob(char *str)
+{
+	int	i;
+
+	i = -1;
+	while (str[++i] )
+	{
+		if (ft_isdigit(str[i]) == 0)
+			return (0);
+	}
+	return (1);
+}
+
+int o(char *str)
+{
+	int	i;
+
+	i = -1;
+	while (str[++i] )
+	{
+		if (str[i] != '=')
+			return (0);
+	}
+	return (1);
+}
+
+int	bltin_export2(t_cmd cmd, t_env **env, int size)
 {
 	int		n;
 	char	**split;
@@ -8,6 +48,9 @@ void	bltin_export2(t_cmd cmd, t_env **env, int size)
 	n = 1;
 	while (n < size)
 	{
+		if (a_(cmd.args[n]) == 0 || ob(cmd.args[n]) == 1 || o(cmd.args[n]) == 1)
+			return (ft_putstr_fd("bash: export: ", 2), \
+ft_putstr_fd(cmd.args[n], 2), ft_putendl_fd(": not a valid identifier", 2), 1);
 		if (is_in_str('=', cmd.args[n]))
 		{
 			split = ft_split1(cmd.args[n], '=');
@@ -24,6 +67,7 @@ void	bltin_export2(t_cmd cmd, t_env **env, int size)
 			add_env_line(env, init_env_line(ft_strdup(cmd.args[n]), NULL));
 		n++;
 	}
+	return (0);
 }
 
 int	ex2(t_env *cp, int fd)
@@ -62,7 +106,7 @@ int	bltin_export(t_cmd cmd, t_env **env, int fd)
 		}
 	}
 	else
-		bltin_export2(cmd, env, size[0]);
+		return (bltin_export2(cmd, env, size[0]));
 	return (env_clear(&cpy), 0);
 }
 

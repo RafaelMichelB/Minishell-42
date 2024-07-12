@@ -152,7 +152,7 @@ int		bltin_unset(t_cmd cmd, t_env **env);
 int		builtin_unset_prep(t_cmd *cmd, t_env **env);
 int		bltin_env(t_env *env, int fd);
 int		builtin_env_prep(t_cmd *cmd, t_env **env);
-void	bltin_export2(t_cmd cmd, t_env **env, int size);
+int		bltin_export2(t_cmd cmd, t_env **env, int size);
 int		ex2(t_env *cp, int fd);
 int		bltin_export(t_cmd cmd, t_env **env, int fd);
 int		builtin_export_prep(t_cmd *cmd, t_env **env);
