@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   env2.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:49:41 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:49:41 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 t_env	*generate_env(char **env)
@@ -58,8 +70,8 @@ int	envsize(t_env *env)
 	return (s);
 }
 
-void	dc(int fd[], int *i, t_cmd *cmds)
+void	dc(int fd[], int *i, t_cmd *cmds[], char **env)
 {
 	signal(SIGINT, handle_sigint2);
-	do1cmd32(fd, i, cmds);
+		do1cmd32(fd, i, cmds, env);
 }

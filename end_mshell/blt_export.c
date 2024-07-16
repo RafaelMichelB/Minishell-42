@@ -1,38 +1,23 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   blt_export.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:48:41 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:48:41 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
-int	a_(char *str)
+int	o(char *str)
 {
 	int	i;
 
 	i = -1;
-	while (str[++i] && str[i] != '=')
-	{
-		if (ft_isalnum(str[i]) == 0 && str[i] != '_')
-			return (0);
-
-	}
-	return (1);
-}
-
-int	ob(char *str)
-{
-	int	i;
-
-	i = -1;
-	while (str[++i] )
-	{
-		if (ft_isdigit(str[i]) == 0)
-			return (0);
-	}
-	return (1);
-}
-
-int o(char *str)
-{
-	int	i;
-
-	i = -1;
-	while (str[++i] )
+	while (str[++i])
 	{
 		if (str[i] != '=')
 			return (0);
@@ -45,8 +30,8 @@ int	bltin_export2(t_cmd cmd, t_env **env, int size)
 	int		n;
 	char	**split;
 
-	n = 1;
-	while (n < size)
+	n = 0;
+	while (++n < size)
 	{
 		if (a_(cmd.args[n]) == 0 || ob(cmd.args[n]) == 1 || o(cmd.args[n]) == 1)
 			return (ft_putstr_fd("bash: export: ", 2), \
@@ -65,7 +50,6 @@ ft_putstr_fd(cmd.args[n], 2), ft_putendl_fd(": not a valid identifier", 2), 1);
 		}
 		else
 			add_env_line(env, init_env_line(ft_strdup(cmd.args[n]), NULL));
-		n++;
 	}
 	return (0);
 }
@@ -106,7 +90,7 @@ int	bltin_export(t_cmd cmd, t_env **env, int fd)
 		}
 	}
 	else
-		return (bltin_export2(cmd, env, size[0]));
+		return (env_clear(&cpy), bltin_export2(cmd, env, size[0]));
 	return (env_clear(&cpy), 0);
 }
 
@@ -133,7 +117,15 @@ ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
 	j = i++;
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmd[i].type != END)
-		do1cmd2(fd, &i, cmd);
+		do1cmd2b(fd, &i, cmd, env);
+	if (fd[1] == -1)
+	{
+		if (access(cmd[i - 1].path, F_OK) == 0 && access(cmd[i - 1].path, W_OK) != 0)
+			return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i - 1].path, 2), \
+ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
+		return (close(fd[0]), 1);
+	}
 	k = bltin_export(cmd[j], env, fd[1]);
 	return (close_fds(fd), k);
 }

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   change_lst.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:48:56 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:48:56 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	cl(t_list **cp, t_list **tmp)
@@ -8,6 +20,8 @@ void	cl(t_list **cp, t_list **tmp)
 		ft_lstadd_back(tmp, ft_lstnew(ft_strdup(";")));
 		(*cp) = (*cp)->next;
 	}
+	else if (only_in2((*cp)->content, ' ', '	') == 1)
+		*cp = *cp;
 	else
 		ft_lstadd_back(tmp, ft_lstnew(ft_strdup((*cp)->content)));
 	(*cp) = (*cp)->next;
@@ -30,6 +44,8 @@ void	cl2(t_list **cp, t_list **new_lst, t_list **tmp_lst)
 		ft_lstclear(tmp_lst, &ft_del);
 		*tmp_lst = NULL;
 	}
+	else if (only_in2((*cp)->content, ' ', '	') == 1)
+		(*cp) = (*cp)->next;
 	else
 		ft_lstadd_back(tmp_lst, ft_lstnew(ft_strdup((*cp)->content)));
 	(*cp) = (*cp)->next;

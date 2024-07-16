@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   mains.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:49:52 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:49:52 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	main4(char *str, char **tab, int flags[])
@@ -40,6 +52,7 @@ void	main2(char *str, t_env **env, int *flag, int fd)
 void	handle_sigint(int sig)
 {
 	(void)sig;
+	hold_flag('p', 130);
 	rl_replace_line("", 0);
 	rl_on_new_line();
 	rl_redisplay();
@@ -53,6 +66,15 @@ void	main12(char *str, t_env **my_env, int flag)
 	rl_clear_history();
 	env_clear(my_env);
 	exit(flag);
+}
+
+void	main12b(char *str, t_env **my_env, int *flag)
+{
+	free(str);
+	rl_clear_history();
+	env_clear(my_env);
+	ft_putendl_fd("Not matching quotes", 2);
+	*flag = 2;
 }
 
 void	main13(char ***t, int flag, char *str, t_env **my_env)

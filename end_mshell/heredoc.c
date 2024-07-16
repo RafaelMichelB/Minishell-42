@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   heredoc.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:49:48 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:49:49 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -38,18 +50,23 @@ void	handle_sigint3(int sig)
 {
 	t_cmd	*cmd;
 	int		*nb;
+	t_env	**env;
 	char	**st;
 
 	(void)sig;
 	cmd = sim_glob('m', NULL, NULL, NULL);
 	nb = sim_glob('n', NULL, NULL, NULL);
 	st = sim_glob('o', NULL, NULL, NULL);
+	env = sim_glob('e', NULL, NULL, NULL);
 	if (cmd)
 		clear_cmds(cmd);
 	if (nb)
 		free(nb);
 	if (st)
 		ft_free(st);
+	if (env)
+		env_clear(env);
+	hold_fd('c', -1);
 	exit(3);
 }
 
@@ -83,6 +100,7 @@ void	hd2(char **arr, t_cmd *cmds, int j, char *end_w)
 	arr = ft_calloc(2, sizeof(char *));
 	sim_glob('w', NULL, NULL, arr);
 	fd = open("/tmp/heredoc_file", O_RDWR | O_CREAT | O_TRUNC, 0644);
+	hold_fd('p', fd);
 	input = readline("> ");
 	while (input != NULL && ft_strncmp(end_w, input, 2147483647) != 0)
 	{

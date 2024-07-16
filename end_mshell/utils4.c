@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils4.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:50:59 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:50:59 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 t_cmd	handle_hdoc(t_list **l, t_env *menv)
@@ -48,13 +60,21 @@ t_cmd	handle_hdoc2(t_list **l, t_env *menv)
 
 int	detect_builtin(char *str)
 {
-	if (ft_strncmp("cd", str, 2147483647) == 0 || \
-	ft_strncmp("echo", str, 2147483647) == 0 || \
-	ft_strncmp("pwd", str, 2147483647) == 0 || \
-	ft_strncmp("unset", str, 2147483647) == 0 || \
-	ft_strncmp("export", str, 2147483647) == 0 || \
-	ft_strncmp("env", str, 2147483647) == 0)
+	char	*s;
+
+	s = ft_strtrim2(str, " ");
+	if (ft_strncmp("cd", s, 2147483647) == 0 || \
+	ft_strncmp("echo", s, 2147483647) == 0 || \
+	ft_strncmp("pwd", s, 2147483647) == 0 || \
+	ft_strncmp("unset", s, 2147483647) == 0 || \
+	ft_strncmp("export", s, 2147483647) == 0 || \
+	ft_strncmp("env", s, 2147483647) == 0 || \
+	ft_strncmp("exit", s, 2147483647) == 0)
+	{
+		free(s);
 		return (0);
+	}
+	free(s);
 	return (1);
 }
 

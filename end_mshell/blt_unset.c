@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   blt_unset.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:48:51 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:48:51 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	free_unset(t_env *tc)
@@ -36,6 +48,16 @@ int	bltin_unset(t_cmd cmd, t_env **env)
 	return (0);
 }
 
+void	blt_us2(int fd[], int i, t_cmd *cmd)
+{
+	if (fd[0] == -1)
+		return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2));
+	if (fd[0] != -1)
+		close(fd[0]);
+	fd[0] = open(cmd[i].path, O_RDONLY);
+}
+
 int	builtin_unset_prep(t_cmd *cmd, t_env **env)
 {
 	int	i;
@@ -46,21 +68,23 @@ int	builtin_unset_prep(t_cmd *cmd, t_env **env)
 	i = -1;
 	fd[0] = open("/dev/stdout", O_WRONLY);
 	while (cmd[++i].type == RED_IN)
-	{
-		if (fd[0] == -1)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
-		if (fd[0] != -1)
-			close(fd[0]);
-		fd[0] = open(cmd[i].path, O_RDONLY);
-	}
+		blt_us2(fd, i, cmd);
 	if (fd[0] == -1)
 		return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmd[i - 1].path, 2), \
 		ft_putendl_fd(": No such file or directory", 2), 1);
 	j = i++;
 	fd[1] = open("/dev/stdout", O_WRONLY | O_APPEND | O_CREAT, 0644);
 	while (cmd[i].type != END)
-		do1cmd2(fd, &i, cmd);
+		do1cmd2b(fd, &i, cmd, env);
+	if (fd[1] == -1)
+	{
+		if (access(cmd[i - 1].path, F_OK) == 0 && \
+access(cmd[i - 1].path, W_OK) != 0)
+			return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i - 1].path, 2), \
+ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
+		return (close(fd[0]), 1);
+	}
 	k = bltin_unset(cmd[j], env);
 	return (close_fds(fd), k);
 }

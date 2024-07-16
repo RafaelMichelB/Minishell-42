@@ -1,4 +1,31 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   change_str.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:49:04 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:49:04 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
+
+int	count_nb(char *s, char c)
+{
+	int	i;
+	int	nb;
+
+	nb = 0;
+	i = -1;
+	while (s[++i])
+	{
+		if (s[i] == c)
+			nb++;
+	}
+	return (nb);
+}
 
 void	change_st(char **tab, int f[])
 {
@@ -11,7 +38,8 @@ void	change_st(char **tab, int f[])
 			tab[f[4]] = add_str2("< /dev/stdin ", &(tab[f[4]]));
 		else
 		{
-			if (ft_strchr(tab[0], '"') == NULL)
+			if (count_nb(tab[f[4]], '"') % 2 == 0 && \
+			count_nb(tab[f[4]], '\'') % 2 == 0)
 				tab[f[4]] = add_str2(tin[(f[4] + 1) % 2], &(tab[f[4]]));
 		}
 	}
@@ -19,7 +47,11 @@ void	change_st(char **tab, int f[])
 	{
 		if (tab[f[4] + 1])
 		{
-			if (ft_strchr(tab[0], '"') == NULL)
+			if (count_nb(tab[f[4]], '"') % 2 == 0 && \
+			count_nb(tab[f[4]], '\'') % 2 == 0)
+				tab[f[4]] = add_str(tab[f[4]], to[f[4] % 2]);
+			else if (tab[f[4] + 1] && (count_nb(tab[f[4] + 1], '"') % 2 == 0 && \
+			count_nb(tab[f[4] + 1], '\'') % 2 == 0))
 				tab[f[4]] = add_str(tab[f[4]], to[f[4] % 2]);
 		}
 		else

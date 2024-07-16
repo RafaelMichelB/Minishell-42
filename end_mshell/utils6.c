@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils6.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:51:12 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:51:12 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 int	find_hdoc2(t_cmd *cmd)
@@ -55,4 +67,14 @@ void	open_fds(int fd)
 	close(fd);
 	fd = open("/tmp/tempfile2", O_RDWR | O_CREAT, 0644);
 	close(fd);
+}
+
+void	hold_fd(char c, int fd)
+{
+	static int	f = -1;
+
+	if (c == 'p')
+		f = fd;
+	else if (c == 'c')
+		close(f);
 }

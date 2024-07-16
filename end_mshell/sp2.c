@@ -1,20 +1,38 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sp2.c                                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:50:43 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:50:43 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	sp(int tab[], t_env **env, t_cmd *type)
 {
+	char	*s;
+
+	s = ft_strtrim2(type[tab[3]].path, " ");
 	tab[4] = 1;
-	if (ft_strncmp(type[tab[3]].path, "cd", 2147483647) == 0)
+	if (ft_strncmp(s, "cd", 2147483647) == 0)
 		tab[6] = builtin_cd_prep(type, env);
-	else if (ft_strncmp(type[tab[3]].path, "echo", 2147483647) == 0)
-		tab[6] = builtin_echo_prep(type);
-	else if (ft_strncmp(type[tab[3]].path, "pwd", 2147483647) == 0)
-		tab[6] = builtin_pwd_prep(type);
-	else if (ft_strncmp(type[tab[3]].path, "unset", 2147483647) == 0)
+	else if (ft_strncmp(s, "echo", 2147483647) == 0)
+		tab[6] = builtin_echo_prep(type, env);
+	else if (ft_strncmp(s, "pwd", 2147483647) == 0)
+		tab[6] = builtin_pwd_prep(type, env);
+	else if (ft_strncmp(s, "unset", 2147483647) == 0)
 		tab[6] = builtin_unset_prep(type, env);
-	else if (ft_strncmp(type[tab[3]].path, "env", 2147483647) == 0)
+	else if (ft_strncmp(s, "env", 2147483647) == 0)
 		tab[6] = builtin_env_prep(type, env);
-	else if (ft_strncmp(type[tab[3]].path, "export", 2147483647) == 0)
+	else if (ft_strncmp(s, "export", 2147483647) == 0)
 		tab[6] = builtin_export_prep(type, env);
+	else if (ft_strncmp(s, "export", 2147483647) == 0)
+		tab[6] = tab[6];
+	free(s);
 	free(type);
 }
 
@@ -58,6 +76,7 @@ void	sp3(int tab[], t_env **env, t_cmd *type, t_cmd *cmd)
 		tab[4] = 0;
 		nenv = convert_array(*env);
 		pid = fork();
+		stock_pid('p', pid);
 		if (pid == 0)
 		{
 			env_clear(env);

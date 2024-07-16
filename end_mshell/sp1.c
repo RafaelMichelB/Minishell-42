@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sp1.c                                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:50:39 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:50:39 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type)
@@ -76,4 +88,15 @@ int	*find_hdocs(t_cmd *cmd, int n)
 		n++;
 	}
 	return (hdocs);
+}
+
+pid_t	stock_pid(char c, pid_t pid)
+{
+	static pid_t	pi;
+
+	if (c == 'p')
+		pi = pid;
+	else
+		return (pi);
+	return (-1);
 }

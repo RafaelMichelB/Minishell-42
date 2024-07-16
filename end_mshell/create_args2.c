@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   create_args2.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:49:21 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:49:21 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "parser.h"
 
 void	ca25(t_list **l, int *i, t_cmd **cmd_array)
@@ -34,7 +46,7 @@ int	ca3(t_list **l, int tab[], t_cmd **cmd_array)
 	int	f;
 
 	f = 0;
-	while (((char *)((*l)->content))[0] != '>')
+	while (*l && ((char *)((*l)->content))[0] != '>')
 		*l = (*l)->next;
 	if ((*l) && ((char *)((*l)->content))[0] == '>' && (*l)->next)
 	{
@@ -68,7 +80,7 @@ t_cmd	*create_args(t_list *l, t_env *env)
 	while (l)
 	{
 		ca2(&l, &(tab[0]), &cmd_array, env);
-		while (l->next && ((char *)(l->next->content))[0] != '<')
+		while (l && l->next && ((char *)(l->next->content))[0] != '<')
 			ca3(&l, tab, &cmd_array);
 		if (l)
 			l = l->next;
