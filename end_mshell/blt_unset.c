@@ -50,12 +50,20 @@ int	bltin_unset(t_cmd cmd, t_env **env)
 
 void	blt_us2(int fd[], int i, t_cmd *cmd)
 {
-	if (fd[0] == -1)
+	if (fd[0] == -1 && access(cmd[i - 1].path, F_OK) != 0)
 		return (ft_putstr_fd("bash: ", 2), \
 ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2));
 	if (fd[0] != -1)
 		close(fd[0]);
 	fd[0] = open(cmd[i].path, O_RDONLY);
+}
+
+int	blt_us3(int fd[], t_cmd *cmd, int i, t_env **env)
+{
+	(void)env;
+	return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(": Permission denied", 2), \
+close(fd[0]), 1);
 }
 
 int	builtin_unset_prep(t_cmd *cmd, t_env **env)
@@ -80,9 +88,7 @@ int	builtin_unset_prep(t_cmd *cmd, t_env **env)
 	{
 		if (access(cmd[i - 1].path, F_OK) == 0 && \
 access(cmd[i - 1].path, W_OK) != 0)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i - 1].path, 2), \
-ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
+			return (blt_us3(fd, cmd, i, env));
 		return (close(fd[0]), 1);
 	}
 	k = bltin_unset(cmd[j], env);

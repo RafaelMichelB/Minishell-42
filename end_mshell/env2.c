@@ -73,5 +73,5 @@ int	envsize(t_env *env)
 void	dc(int fd[], int *i, t_cmd *cmds[], char **env)
 {
 	signal(SIGINT, handle_sigint2);
-		do1cmd32(fd, i, cmds, env);
+	do1cmd32(fd, i, cmds, env);
 }

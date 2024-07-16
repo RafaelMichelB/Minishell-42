@@ -15,13 +15,14 @@
 void	sp(int tab[], t_env **env, t_cmd *type)
 {
 	char	*s;
+	char	cwd[1024];
 
 	s = ft_strtrim2(type[tab[3]].path, " ");
 	tab[4] = 1;
 	if (ft_strncmp(s, "cd", 2147483647) == 0)
-		tab[6] = builtin_cd_prep(type, env);
+		tab[6] = builtin_cd_prep(type, env, cwd);
 	else if (ft_strncmp(s, "echo", 2147483647) == 0)
-		tab[6] = builtin_echo_prep(type, env);
+		tab[6] = builtin_echo_prep(type, env, -1);
 	else if (ft_strncmp(s, "pwd", 2147483647) == 0)
 		tab[6] = builtin_pwd_prep(type, env);
 	else if (ft_strncmp(s, "unset", 2147483647) == 0)
@@ -29,7 +30,7 @@ void	sp(int tab[], t_env **env, t_cmd *type)
 	else if (ft_strncmp(s, "env", 2147483647) == 0)
 		tab[6] = builtin_env_prep(type, env);
 	else if (ft_strncmp(s, "export", 2147483647) == 0)
-		tab[6] = builtin_export_prep(type, env);
+		tab[6] = builtin_export_prep(type, env, 0);
 	else if (ft_strncmp(s, "export", 2147483647) == 0)
 		tab[6] = tab[6];
 	free(s);

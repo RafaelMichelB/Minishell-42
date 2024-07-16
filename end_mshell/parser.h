@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parser.h                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/07/14 15:50:05 by marvin            #+#    #+#             */
+/*   Updated: 2024/07/14 15:50:05 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef PARSER_H
 # define PARSER_H
 # define RED_IN 21
@@ -42,6 +54,9 @@ typedef struct s_env
 	struct s_env	*next;
 }	t_env;
 
+int		ev2(int fd[], int i[], t_cmd *cmd, t_env **env);
+void	main12b(char *str, t_env **my_env, int *flag);
+void	hold_fd(char c, int fd);
 int		simulpipe(t_cmd *cmd, t_env **env);
 void	simulpipe2(int tab[], t_cmd *cmd, t_cmd **type);
 t_cmd	*main3(t_list *t_lst[], t_nlist *lst, int *flag, t_env **env);
@@ -61,7 +76,6 @@ int		handle_hdocs(char *end_w, t_cmd *cmds, int j, t_env **env);
 void	clear_cmds(t_cmd *cmds);
 void	env_clear(t_env **env);
 void	*sim_glob(char c, t_env **env, t_cmd *cmd, void *n);
-void	handle_sigint(int sig);
 char	*add_str2(char *str, char **s);
 char	*add_str(char *str, char *s);
 int		is_in_str(char c, char *str);
@@ -104,14 +118,15 @@ void	ca2(t_list **l, int *i, t_cmd **cmd_array, t_env *env);
 void	ca32(t_list **l, int *i, t_cmd **cmd_array, int *j);
 int		ca3(t_list **l, int tab[], t_cmd **cmd_array);
 t_cmd	*create_args(t_list *l, t_env *env);
-void	do1cmd2(int fd[], int *i, t_cmd *cmds);
-void	do1cmd3(int fd[], int *i, t_cmd *cmds);
+void	do1cmd2(int fd[], int *i, t_cmd *cmds, char **env);
+void	do1cmd2b(int fd[], int *i, t_cmd *cmds, t_env **env);
+void	do1cmd3(int fd[], int *i, t_cmd *cmds[], char **env);
 int		do1cmd41(t_cmd *cmds, t_cmd *cmd, int i, char **env);
 int		do1cmd42(t_cmd *cmds, t_cmd *cmd, int i, char **env);
 int		do1cmd43(t_cmd *cmds, t_cmd *cmd, int i, char **env);
 int		do1cmd(t_cmd *cmds, char **env, t_cmd *cmd, int i);
 int		do1cmd5(t_cmd *cmd, t_cmd *cmds, char **env, int fd[]);
-void	do1cmd32(int fd[], int *i, t_cmd *cmds);
+void	do1cmd32(int fd[], int *i, t_cmd *cmds[], char **env);
 int		do1cmd45(t_cmd *cmds, t_cmd *cmd, int j, char **env);
 int		do1cmd44(t_cmd *cmds, t_cmd *cmd, int j, char **env);
 void	change_st2(char **str, char ***tab, int flags[]);
@@ -140,13 +155,13 @@ void	open_fds(int fd);
 int		bltin_cd(t_cmd cmd, t_env *env);
 int		cd2(t_cmd *cmd, int i[]);
 void	cd3(t_env **env, char *str[], char cwd[], int fd[]);
-int		builtin_cd_prep(t_cmd *cmd, t_env **env);
+int		builtin_cd_prep(t_cmd *cmd, t_env **env, char cwd[]);
 void	escape_print(char c, int fd);
 void	print_arg(char *arg, int fd);
 void	bltin_echo(t_cmd cmd, int fd);
-int		builtin_echo_prep(t_cmd *cmd);
+int		builtin_echo_prep(t_cmd *cmd, t_env **env, int i);
 int		bltin_pwd(int fd);
-int		builtin_pwd_prep(t_cmd *cmd);
+int		builtin_pwd_prep(t_cmd *cmd, t_env **env);
 void	free_unset(t_env *tc);
 int		bltin_unset(t_cmd cmd, t_env **env);
 int		builtin_unset_prep(t_cmd *cmd, t_env **env);
@@ -155,7 +170,7 @@ int		builtin_env_prep(t_cmd *cmd, t_env **env);
 int		bltin_export2(t_cmd cmd, t_env **env, int size);
 int		ex2(t_env *cp, int fd);
 int		bltin_export(t_cmd cmd, t_env **env, int fd);
-int		builtin_export_prep(t_cmd *cmd, t_env **env);
+int		builtin_export_prep(t_cmd *cmd, t_env **env, int j);
 void	main4(char *str, char **tab, int flags[]);
 void	main2(char *str, t_env **env, int *flag, int fd);
 void	handle_sigint(int sig);
@@ -168,6 +183,13 @@ void	handle_sigint3(int sig);
 int		cd2(t_cmd *cmd, int i[]);
 void	handle_sigint4(int sig);
 void	hd2(char **arr, t_cmd *cmds, int j, char *end_w);
-void	dc(int fd[], int *i, t_cmd *cmds);
+void	dc(int fd[], int *i, t_cmd *cmds[], char **env);
+pid_t	stock_pid(char c, pid_t pid);
+int		hold_flag(char c, int flag);
+int		a_(char *str);
+int		ob(char *str);
+void	do1cmd2b(int fd[], int *i, t_cmd *cmds, t_env **env);
+int		docmdb(t_cmd *c[], int i, char **env, int fd[]);
+int		ex3(t_cmd *cmd, int i, int fd[], t_env **env);
 
 #endif

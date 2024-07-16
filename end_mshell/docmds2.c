@@ -53,11 +53,7 @@ int	do1cmd(t_cmd *cmds, char **env, t_cmd *cmd, int i)
 	dc(fd, &i, c, env);
 	fd[2] = i++;
 	if (cmds[i - 1].type == NONE)
-	{
-		if (ft_strncmp(cmds[i - 1].path, "", 2147483647) == 0)
-			return (do1cmd5(cmd, cmds, env, fd));
-		return (close(fd[0]), do1cmd41(cmds, cmd, i - 1, env), 0);
-	}
+		docmdb(c, i, env, fd);
 	if (access(cmds[fd[2]].path, F_OK) != 0)
 		return (do1cmd45(cmds, cmd, fd[2], env));
 	if (fd[0] == -1)

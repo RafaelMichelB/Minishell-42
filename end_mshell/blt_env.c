@@ -29,6 +29,22 @@ int	bltin_env(t_env *env, int fd)
 	return (0);
 }
 
+int	ev2(int fd[], int i[], t_cmd *cmd, t_env **env)
+{
+	if (access(cmd[i[0] - 1].path, F_OK) == 0 && \
+	access(cmd[i[0] - 1].path, W_OK) != 0)
+		return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i[0] - 1].path, 2), \
+ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
+	return (close(fd[0]), 1);
+}
+
+int	ev3(t_cmd *cmd, int i[])
+{
+	return (ft_putstr_fd("bash: ", 2), \
+ft_putstr_fd(cmd[i[0] - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
+}
+
 int	builtin_env_prep(t_cmd *cmd, t_env **env)
 {
 	int	i[3];
@@ -39,27 +55,19 @@ int	builtin_env_prep(t_cmd *cmd, t_env **env)
 	while (cmd[++(i[0])].type == RED_IN)
 	{
 		if (fd[0] == -1)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i[0] - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
+			return (ev3(cmd, i));
 		if (fd[0] != -1)
 			close(fd[0]);
 		fd[0] = open(cmd[i[0]].path, O_RDONLY);
 	}
 	if (fd[0] == -1)
-		return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i[0] - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
+		return (ev3(cmd, i));
 	i[1] = (i[0])++;
 	fd[1] = open("/dev/stdout", O_WRONLY);
 	while (cmd[i[0]].type != END)
 		do1cmd2b(fd, &(i[0]), cmd, env);
 	if (fd[1] == -1)
-	{
-		if (access(cmd[i[0] - 1].path, F_OK) == 0 && access(cmd[i[0] - 1].path, W_OK) != 0)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i[0] - 1].path, 2), \
-ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
-		return (close(fd[0]), 1);
-	}
+		return (ev2(fd, i, cmd, env));
 	if (count_size_args(cmd[i[1]].args) > 1)
 		return (1);
 	i[2] = bltin_env(*env, fd[1]);

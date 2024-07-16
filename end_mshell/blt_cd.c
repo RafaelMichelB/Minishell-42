@@ -35,10 +35,7 @@ chdir(ft_getenv("OLDPWD", env)), 0);
 		return (1);
 	}
 	if (chdir(cmd.args[1]) != 0)
-	{
-		perror("chdir ");
-		return (1);
-	}
+		return (perror("chdir "), 1);
 	return (0);
 }
 
@@ -55,12 +52,11 @@ void	cd3(t_env **env, char *str[], char cwd[], int fd[])
 	close_fds(fd);
 }
 
-int	builtin_cd_prep(t_cmd *cmd, t_env **env)
+int	builtin_cd_prep(t_cmd *cmd, t_env **env, char cwd[])
 {
 	int		fd[2];
 	int		i[3];
 	char	*str[2];
-	char	cwd[1024];
 
 	i[0] = 0;
 	fd[0] = open("/dev/stdout", O_WRONLY);
@@ -79,15 +75,8 @@ int	builtin_cd_prep(t_cmd *cmd, t_env **env)
 	while (cmd[i[0]].type != END)
 		do1cmd2b(fd, &(i[0]), cmd, env);
 	if (fd[1] == -1)
-	{
-		if (access(cmd[i[0] - 1].path, F_OK) == 0 && access(cmd[i[0] - 1].path, W_OK) != 0)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i[0] - 1].path, 2), \
-ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
-		return (close(fd[0]), 1);
-	}
+		return (ev2(fd, i, cmd, env));
 	str[0] = ft_getenv("PWD", *env);
 	i[2] = bltin_cd(cmd[i[1]], *env);
-	getcwd(cwd, 1024);
-	return (cd3(env, str, cwd, fd), i[2]);
+	return (getcwd(cwd, 1024), cd3(env, str, cwd, fd), i[2]);
 }

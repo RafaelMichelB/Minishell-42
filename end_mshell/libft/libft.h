@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/02 17:37:04 by rmichel-          #+#    #+#             */
-/*   Updated: 2024/07/12 14:23:04 by marvin           ###   ########.fr       */
+/*   Updated: 2024/07/13 10:53:01 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,5 +67,6 @@ t_list	*ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *));
 void	ft_lstiter(t_list *lst, void (*f)(void *));
 char	*get_next_line(int fd);
 void	ft_free(char **tab);
+int		ft_atoi2(const char *nbr);
 
 #endif

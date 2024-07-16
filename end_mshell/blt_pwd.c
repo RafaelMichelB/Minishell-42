@@ -64,13 +64,7 @@ ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
 	while (cmd[i].type != END)
 		do1cmd2b(fd, &i, cmd, env);
 	if (fd[1] == -1)
-	{
-		if (access(cmd[i - 1].path, F_OK) == 0 && access(cmd[i - 1].path, W_OK) != 0)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i - 1].path, 2), \
-ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
-		return (close(fd[0]), 1);
-	}
+		return (ex3(cmd, i, fd, env));
 	k = bltin_pwd(fd[1]);
 	close_fds(fd);
 	return (k);

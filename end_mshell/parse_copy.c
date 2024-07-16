@@ -37,7 +37,7 @@ void	init_signal(void)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-int		check_errors(char *str)
+int	check_errors(char *str)
 {
 	int	i;
 	int	dq;
@@ -60,6 +60,7 @@ int		check_errors(char *str)
 	}
 	return (dq == 0 && sq == 0);
 }
+
 void	read_entry(char *str, t_env **my_env, int *flag, char **t)
 {
 	int	fd;

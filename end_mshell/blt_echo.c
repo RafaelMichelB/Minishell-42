@@ -81,13 +81,11 @@ void	bltin_echo(t_cmd cmd, int fd)
 		ft_putstr_fd("\n", fd);
 }
 
-int	builtin_echo_prep(t_cmd *cmd, t_env **env)
+int	builtin_echo_prep(t_cmd *cmd, t_env **env, int i)
 {
-	int	i;
 	int	j;
 	int	fd[2];
 
-	i = -1;
 	fd[0] = open("/dev/stdout", O_WRONLY);
 	while (cmd[++i].type == RED_IN)
 	{
@@ -106,13 +104,7 @@ ft_putstr_fd(cmd[i - 1].path, 2), ft_putendl_fd(NOF, 2), 1);
 	while (cmd[i].type != END)
 		do1cmd2b(fd, &i, cmd, env);
 	if (fd[1] == -1)
-	{
-		if (access(cmd[i - 1].path, F_OK) == 0 && access(cmd[i - 1].path, W_OK) != 0)
-			return (ft_putstr_fd("bash: ", 2), \
-ft_putstr_fd(cmd[i - 1].path, 2), \
-ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
-		return (close(fd[0]), 1);
-	}
+		return (ex3(cmd, i, fd, env));
 	if (count_size_args(cmd[j].args) == 1)
 		return (ft_putstr_fd("\n", fd[1]), close_fds(fd), 0);
 	return (bltin_echo(cmd[j], fd[1]), close_fds(fd), 0);

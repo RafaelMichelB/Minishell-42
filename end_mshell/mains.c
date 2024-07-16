@@ -68,15 +68,6 @@ void	main12(char *str, t_env **my_env, int flag)
 	exit(flag);
 }
 
-void	main12b(char *str, t_env **my_env, int *flag)
-{
-	free(str);
-	rl_clear_history();
-	env_clear(my_env);
-	ft_putendl_fd("Not matching quotes", 2);
-	*flag = 2;
-}
-
 void	main13(char ***t, int flag, char *str, t_env **my_env)
 {
 	if ((*t)[1] && (*t)[2])

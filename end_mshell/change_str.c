@@ -27,6 +27,13 @@ int	count_nb(char *s, char c)
 	return (nb);
 }
 
+void	cs(char **tab, int f[], char *tin[])
+{
+	if (count_nb(tab[f[4]], '"') % 2 == 0 && \
+	count_nb(tab[f[4]], '\'') % 2 == 0)
+		tab[f[4]] = add_str2(tin[(f[4] + 1) % 2], &(tab[f[4]]));
+}
+
 void	change_st(char **tab, int f[])
 {
 	static char	*tin[2] = {"< /tmp/tempfile ", "< /tmp/tempfile2 "};
@@ -37,11 +44,7 @@ void	change_st(char **tab, int f[])
 		if (f[4] == 0)
 			tab[f[4]] = add_str2("< /dev/stdin ", &(tab[f[4]]));
 		else
-		{
-			if (count_nb(tab[f[4]], '"') % 2 == 0 && \
-			count_nb(tab[f[4]], '\'') % 2 == 0)
-				tab[f[4]] = add_str2(tin[(f[4] + 1) % 2], &(tab[f[4]]));
-		}
+			cs(tab, f, tin);
 	}
 	if (is_in_str('>', tab[f[4]]) == 0)
 	{
