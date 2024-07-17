@@ -127,7 +127,7 @@ int		do1cmd43(t_cmd *cmds, t_cmd *cmd, int i, char **env);
 int		do1cmd(t_cmd *cmds, char **env, t_cmd *cmd, int i);
 int		do1cmd5(t_cmd *cmd, t_cmd *cmds, char **env, int fd[]);
 void	do1cmd32(int fd[], int *i, t_cmd *cmds[], char **env);
-int		do1cmd45(t_cmd *cmds, t_cmd *cmd, int j, char **env);
+int		do1cmd45(t_cmd *cmds, t_cmd *cmd, int fd[], char **env);
 int		do1cmd44(t_cmd *cmds, t_cmd *cmd, int j, char **env);
 void	change_st2(char **str, char ***tab, int flags[]);
 void	change_st(char **tab, int f[]);
@@ -191,5 +191,6 @@ int		ob(char *str);
 void	do1cmd2b(int fd[], int *i, t_cmd *cmds, t_env **env);
 int		docmdb(t_cmd *c[], int i, char **env, int fd[]);
 int		ex3(t_cmd *cmd, int i, int fd[], t_env **env);
+char	**ft_splitnochain(char *str, char c);
 
 #endif

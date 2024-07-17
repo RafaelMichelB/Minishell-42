@@ -12,14 +12,6 @@
 
 #include "parser.h"
 
-void	main4(char *str, char **tab, int flags[])
-{
-	str = add_str(str, "|");
-	str = add_str(str, tab[flags[4]]);
-	free(tab[flags[4]]);
-	flags[4] += 1;
-}
-
 void	main2(char *str, t_env **env, int *flag, int fd)
 {
 	t_nlist		*lst;
@@ -30,7 +22,7 @@ void	main2(char *str, t_env **env, int *flag, int fd)
 
 	open_fds(fd);
 	flags[4] = 0;
-	tab = ft_split(str, '|');
+	tab = ft_splitnochain(str, '|');
 	tab[flags[4]] = add_str2("< /dev/stdin ", &(tab[flags[4]]));
 	while (tab[flags[4]] != NULL)
 		change_st(tab, flags);
@@ -82,4 +74,22 @@ void	main13(char ***t, int flag, char *str, t_env **my_env)
 	rl_clear_history();
 	env_clear(my_env);
 	exit(flag);
+}
+
+char	**ft_splitnochain(char *str, char c)
+{
+	char	**ret;
+	int		i;
+
+	i = 0;
+	ret = ft_split(str, c);
+	str = ft_strchr(str, c);
+	while (str != NULL)
+	{
+		while (*(++str) == c)
+			ret[i] = add_str(ret[i], "|");
+		i++;
+		str = ft_strchr(str, c);
+	}
+	return (ret);
 }

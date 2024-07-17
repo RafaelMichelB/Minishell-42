@@ -23,11 +23,11 @@ int	do1cmd44(t_cmd *cmds, t_cmd *cmd, int j, char **env)
 		ft_free(env), exit(126), 0);
 }
 
-int	do1cmd45(t_cmd *cmds, t_cmd *cmd, int j, char **env)
+int	do1cmd45(t_cmd *cmds, t_cmd *cmd, int fd[], char **env)
 {
-	return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[j].path, 2), \
+	return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[fd[2]].path, 2), \
 		ft_putendl_fd(": No such file or directory", 2), \
-		free(cmds), clear_cmds(cmd), ft_free(env), exit(127), 0);
+		free(cmds), clear_cmds(cmd), ft_free(env), close(fd[0]), exit(127), 0);
 }
 
 void	do1cmd32(int fd[], int *i, t_cmd *cmds[], char **env)
@@ -53,9 +53,9 @@ int	do1cmd(t_cmd *cmds, char **env, t_cmd *cmd, int i)
 	dc(fd, &i, c, env);
 	fd[2] = i++;
 	if (cmds[i - 1].type == NONE)
-		docmdb(c, i, env, fd);
+		docmdb(c, i - 1, env, fd);
 	if (access(cmds[fd[2]].path, F_OK) != 0)
-		return (do1cmd45(cmds, cmd, fd[2], env));
+		return (do1cmd45(cmds, cmd, fd, env));
 	if (fd[0] == -1)
 		return (do1cmd43(cmds, cmd, i, env), 1);
 	dup2(fd[0], 0);

@@ -41,9 +41,14 @@ void	do1cmd3(int fd[], int *i, t_cmd *cmds[], char **env)
 
 int	do1cmd41(t_cmd *cmds, t_cmd *cmd, int i, char **env)
 {
-	return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[i].path, 2), \
-		ft_putendl_fd(": command not found", 2), clear_cmds(cmd), \
-		free(cmds), ft_free(env), exit(127), 1);
+	int j;
+
+	j = i;
+	while (access(cmds[j].path, F_OK) == 0 || cmds[j].type == BUILTIN)
+		j++;
+	return (ft_putstr_fd("bash: ", 2), ft_putstr_fd(cmds[j].path, 2), \
+		ft_putendl_fd(": command not found", 2), clear_cmds(cmds), \
+		free(cmd), ft_free(env), exit(127), 1);
 }
 
 int	do1cmd42(t_cmd *cmds, t_cmd *cmd, int i, char **env)

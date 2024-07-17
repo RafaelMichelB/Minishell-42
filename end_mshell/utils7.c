@@ -58,9 +58,9 @@ void	do1cmd2b(int fd[], int *i, t_cmd *cmds, t_env **env)
 
 int	docmdb(t_cmd *c[], int i, char **env, int fd[])
 {
-	if (ft_strncmp(c[0][i - 1].path, "", 2147483647) == 0)
+	if (ft_strncmp(c[0][i].path, "", 2147483647) == 0)
 		return (do1cmd5(c[1], c[0], env, fd));
-	return (close(fd[0]), do1cmd41(c[1], c[0], i - 1, env), 0);
+	return (close(fd[0]), do1cmd41(c[1], c[0], i, env), 0);
 }
 
 void	main12b(char *str, t_env **my_env, int *flag)
