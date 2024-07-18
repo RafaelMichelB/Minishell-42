@@ -21,3 +21,19 @@ ft_putstr_fd(cmd[i - 1].path, 2), \
 ft_putendl_fd(": Permission denied", 2), env_clear(env), close(fd[0]), 1);
 	return (close(fd[0]), 1);
 }
+
+int	numerics(char *s)
+{
+	int	i;
+
+	i = 0;
+	if (s == NULL)
+		return (1);
+	while (s[i])
+	{
+		if (ft_isdigit(s[i]) == 0 && s[i] != '"' && s[i] != '+' && s[i] != '-')
+			return (0);
+		i++;
+	}
+	return (1);
+}

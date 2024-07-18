@@ -75,7 +75,7 @@ void	read_entry(char *str, t_env **my_env, int *flag, char **t)
 		add_history(str);
 	t = ft_split(str, ' ');
 	if (is_in_str('|', str) == 0 && t[0] && ft_strncmp(t[0], "exit", 5) == 0)
-		return (main13(&t, *flag, str, my_env), ft_free(t));
+		return (main13(&t, flag, str, my_env), ft_free(t));
 	else
 	{
 		ft_free(t);

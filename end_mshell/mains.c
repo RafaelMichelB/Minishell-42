@@ -60,20 +60,25 @@ void	main12(char *str, t_env **my_env, int flag)
 	exit(flag);
 }
 
-void	main13(char ***t, int flag, char *str, t_env **my_env)
+void	main13(char ***t, int *flag, char *str, t_env **my_env)
 {
 	if ((*t)[1] && (*t)[2])
 	{
-		ft_putendl_fd("bash: exit: too many args", 2);
+		*flag = hold_flag('p', 1);
+		ft_putendl_fd("bash: exit: too many arguments", 2);
 		return ;
 	}
+	if (numerics((*t)[1]) == 0)
+		return (ft_putstr_fd("bash: exit: ", 2), ft_putstr_fd((*t)[1], 2), \
+	ft_putendl_fd(": numeric argument required", 2), ft_free(*t), free(str), \
+	rl_clear_history(), env_clear(my_env), exit(2));
 	if ((*t)[1])
-		flag = ft_atoi2((*t)[1]);
+		*flag = ft_atoi2((*t)[1]);
 	ft_free(*t);
 	free(str);
 	rl_clear_history();
 	env_clear(my_env);
-	exit(flag);
+	exit(*flag);
 }
 
 char	**ft_splitnochain(char *str, char c)

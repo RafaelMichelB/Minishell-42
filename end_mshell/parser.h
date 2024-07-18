@@ -167,7 +167,7 @@ int		bltin_unset(t_cmd cmd, t_env **env);
 int		builtin_unset_prep(t_cmd *cmd, t_env **env);
 int		bltin_env(t_env *env, int fd);
 int		builtin_env_prep(t_cmd *cmd, t_env **env);
-int		bltin_export2(t_cmd cmd, t_env **env, int size);
+int		bltin_export2(t_cmd cmd, t_env **env, int size, int n);
 int		ex2(t_env *cp, int fd);
 int		bltin_export(t_cmd cmd, t_env **env, int fd);
 int		builtin_export_prep(t_cmd *cmd, t_env **env, int j);
@@ -175,7 +175,7 @@ void	main4(char *str, char **tab, int flags[]);
 void	main2(char *str, t_env **env, int *flag, int fd);
 void	handle_sigint(int sig);
 void	main12(char *str, t_env **my_env, int flag);
-void	main13(char ***t, int flag, char *str, t_env **my_env);
+void	main13(char ***t, int *flag, char *str, t_env **my_env);
 int		handle_hdocs(char *end_w, t_cmd *cmds, int j, t_env **env);
 int		*find_hdocs(t_cmd *cmd, int n);
 void	ca26(t_list **l, t_env **env, t_cmd **cmd_array, int *i);
@@ -192,5 +192,5 @@ void	do1cmd2b(int fd[], int *i, t_cmd *cmds, t_env **env);
 int		docmdb(t_cmd *c[], int i, char **env, int fd[]);
 int		ex3(t_cmd *cmd, int i, int fd[], t_env **env);
 char	**ft_splitnochain(char *str, char c);
-
+int		numerics(char *s);
 #endif

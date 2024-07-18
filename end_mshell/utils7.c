@@ -67,7 +67,7 @@ void	main12b(char *str, t_env **my_env, int *flag)
 {
 	free(str);
 	rl_clear_history();
-	env_clear(my_env);
+	(void)my_env;
 	ft_putendl_fd("Not matching quotes", 2);
 	*flag = 2;
 }
