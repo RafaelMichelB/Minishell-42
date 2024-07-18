@@ -69,7 +69,7 @@ void	bltin_echo(t_cmd cmd, int fd)
 	while (i++ < count_size_args(cmd.args))
 	{
 		if (only_n(cmd.args[i - 1]) == 1)
-			i = i;
+			i = i + 1 - 1;
 		else
 		{
 			print_arg(cmd.args[i - 1], fd);

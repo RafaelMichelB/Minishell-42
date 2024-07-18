@@ -25,12 +25,10 @@ int	o(char *str)
 	return (1);
 }
 
-int	bltin_export2(t_cmd cmd, t_env **env, int size)
+int	bltin_export2(t_cmd cmd, t_env **env, int size, int n)
 {
-	int		n;
 	char	**split;
 
-	n = 0;
 	while (++n < size)
 	{
 		if (a_(cmd.args[n]) == 0 || ob(cmd.args[n]) == 1 || o(cmd.args[n]) == 1)
@@ -42,26 +40,28 @@ ft_putstr_fd(cmd.args[n], 2), ft_putendl_fd(": not a valid identifier", 2), 1);
 			remove_env(env, split[0]);
 			if (split[1])
 				add_env_line(env, init_env_line(ft_strdup(split[0]), \
-				ft_strdup(split[1])));
+			ft_strdup(split[1])));
 			else
-				add_env_line(env, init_env_line(ft_strdup(split[0]), \
-				NULL));
+				add_env_line(env, init_env_line(ft_strdup(split[0]), NULL));
 			ft_free(split);
 		}
 		else
+		{
+			remove_env(env, cmd.args[n]);
 			add_env_line(env, init_env_line(ft_strdup(cmd.args[n]), NULL));
+		}
 	}
 	return (0);
 }
 
 int	ex2(t_env *cp, int fd)
 {
-	ft_putstr_fd("=\"", fd);
-	if (ft_strncmp(cp->key, "_", 2) == 0)
-		ft_putstr_fd("/usr/bin/env", fd);
-	else
+	if (ft_strncmp(cp->key, "_", 2) != 0)
+	{
+		ft_putstr_fd("=\"", fd);
 		ft_putstr_fd(cp->value, fd);
-	ft_putstr_fd("\"\n", fd);
+		ft_putstr_fd("\"", fd);
+	}
 	return (0);
 }
 
@@ -76,21 +76,20 @@ int	bltin_export(t_cmd cmd, t_env **env, int fd)
 		return (1);
 	cp = order_env(*env);
 	cpy = cp;
-	if (size[0] == 1)
+	if (size[0] != 1)
+		return (env_clear(&cpy), bltin_export2(cmd, env, size[0], 0));
+	while (cp)
 	{
-		while (cp)
+		if (ft_strncmp(cp->key, "_", 2) != 0)
 		{
 			ft_putstr_fd("declare -x ", fd);
 			ft_putstr_fd(cp->key, fd);
 			if (cp->value)
 				ex2(cp, fd);
-			else
-				ft_putstr_fd("\n", fd);
-			cp = cp->next;
+			ft_putstr_fd("\n", fd);
 		}
+		cp = cp->next;
 	}
-	else
-		return (env_clear(&cpy), bltin_export2(cmd, env, size[0]));
 	return (env_clear(&cpy), 0);
 }
 

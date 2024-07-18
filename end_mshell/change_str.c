@@ -41,7 +41,6 @@ void	change_st(char **tab, int f[])
 
 	if (tab[f[4]][0] != '<')
 	{
-		ft_putendl_fd(tab[f[4]], 2);
 		if (f[4] == 0)
 			tab[f[4]] = add_str2("< /dev/stdin ", &(tab[f[4]]));
 		else

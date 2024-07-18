@@ -41,7 +41,7 @@ void	do1cmd3(int fd[], int *i, t_cmd *cmds[], char **env)
 
 int	do1cmd41(t_cmd *cmds, t_cmd *cmd, int i, char **env)
 {
-	int j;
+	int	j;
 
 	j = i;
 	while (access(cmds[j].path, F_OK) == 0 || cmds[j].type == BUILTIN)
