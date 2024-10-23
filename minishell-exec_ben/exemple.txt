@@ -1,0 +1,42 @@
+
+
+arg[0] = echo;
+
+
+arg[2] = fichier
+
+arg[3] = >
+arg[4] = fichier1
+
+---------------------------
+
+arg[0] = echo
+arg[1] = fichier
+
+
+etape1 - open les redir avec les bons flags (voir man 2 open) et close tout fichier sauf dernier
+etape2 - mettre le fd du dernier fichier dans var de la struct
+etape3 - 
+
+
+
+
+void rm_from_array(char **tab, int i)
+{
+char **temp + malloc;
+
+temp tu va le modifier;
+
+	int j;
+	int k;
+
+	// copier tout les element de **tab; dans res;
+free(tab);
+tab = temp;
+}
+
+
+rm_from_array(arg[i + 1]);
+rm_from_array(arg[i]);
+
+boucler tant de tab qu'il n'y a pu de redir

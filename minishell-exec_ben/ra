@@ -1,0 +1,16 @@
+Fermeture de la sortie du pipe de la première commande
+finish children 0
+exemple.txt
+libft
+Makefile
+minishell
+minishell.h
+obj
+pars.h
+ra
+readline_leaks.supp
+src
+testin
+testout
+varbenj.c
+var_instr(same).c
